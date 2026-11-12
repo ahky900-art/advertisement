@@ -60,5 +60,6 @@ class NaverSearchAdClient:
             "ids": entity_ids,
             "fields": json.dumps(["impCnt", "clkCnt"]),
             "timeRange": json.dumps({"since": since, "until": until}),
+            "timeIncrement": "allDays",
         }
         return self._request("GET", "/stats", params=params)
