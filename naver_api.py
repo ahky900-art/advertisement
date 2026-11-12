@@ -55,11 +55,19 @@ class NaverSearchAdClient:
         return self._request("GET", "/ncc/adgroups", params=params)
 
     def get_stats(self, entity_ids, since, until):
-        # Naver Stat API accepts a homogeneous list of entity IDs per request.
-        params = {
-            "ids": entity_ids,
-            "fields": json.dumps(["impCnt", "clkCnt", "convCnt"]),
-            "timeRange": json.dumps({"since": since, "until": until}),
-            "timeIncrement": "1",
-        }
+        # Single-entity requests support daily rows; use id + timeIncrement=1.
+        if len(entity_ids) == 1:
+            params = {
+                "id": entity_ids[0],
+                "fields": json.dumps(["impCnt", "clkCnt", "ccnt"]),
+                "timeRange": json.dumps({"since": since, "until": until}),
+                "timeIncrement": "1",
+            }
+        else:
+            params = {
+                "ids": entity_ids,
+                "fields": json.dumps(["impCnt", "clkCnt", "ccnt"]),
+                "timeRange": json.dumps({"since": since, "until": until}),
+                "timeIncrement": "allDays",
+            }
         return self._request("GET", "/stats", params=params)
