@@ -112,12 +112,12 @@ def adgroup_stats(days: int = 7):
                         day["convCnt"] = (day["convCnt"] or 0) + float(conv)
                 if not entity_id:
                     continue
-                current = stats_by_id.setdefault(entity_id, {"impCnt": 0, "clkCnt": 0, "_has_imp": False, "_has_clk": False})
-                for metric in ("impCnt", "clkCnt"):
+                current = stats_by_id.setdefault(entity_id, {"impCnt": 0, "clkCnt": 0, "convCnt": 0, "_has_imp": False, "_has_clk": False, "_has_conv": False})
+                for metric in ("impCnt", "clkCnt", "convCnt"):
                     value = row.get(metric)
                     if value is not None:
                         current[metric] += float(value)
-                        current["_has_" + ("imp" if metric == "impCnt" else "clk")] = True
+                        current["_has_" + ("imp" if metric == "impCnt" else "clk" if metric == "clkCnt" else "conv")] = True
         items = []
         matched_count = 0
         for group in groups:
@@ -131,6 +131,7 @@ def adgroup_stats(days: int = 7):
                 "status": group.get("status"),
                 "impCnt": stat["impCnt"] if stat and stat["_has_imp"] else None,
                 "clkCnt": stat["clkCnt"] if stat and stat["_has_clk"] else None,
+                "convCnt": stat["convCnt"] if stat and stat["_has_conv"] else None,
                 "hasStats": bool(stat),
             })
         return {
