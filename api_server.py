@@ -99,6 +99,7 @@ def adgroup_stats(days: int = 7):
                 records = []
             stats_record_count += len(records)
             aggregate = {"impCnt": 0, "clkCnt": 0, "ccnt": 0, "_imp": False, "_clk": False, "_conv": False}
+            group_daily = {}
             for row in records:
                 if not isinstance(row, dict):
                     continue
@@ -109,6 +110,10 @@ def adgroup_stats(days: int = 7):
                         aggregate[flag] = True
                 row_date = str(row.get("dateStart") or row.get("date") or row.get("dt") or row.get("dateTime") or "")[:10]
                 if row_date:
+                    group_day = group_daily.setdefault(row_date, {"date": row_date, "impCnt": 0, "clkCnt": 0})
+                    for field in ("impCnt", "clkCnt"):
+                        if row.get(field) is not None:
+                            group_day[field] += float(row[field])
                     day = daily_by_date.setdefault(row_date, {"date": row_date, "impCnt": 0, "clkCnt": 0, "ccnt": 0, "_hasConv": False})
                     for field in ("impCnt", "clkCnt"):
                         if row.get(field) is not None:
@@ -116,6 +121,7 @@ def adgroup_stats(days: int = 7):
                     if row.get("ccnt") is not None:
                         day["ccnt"] += float(row["ccnt"])
                         day["_hasConv"] = True
+            aggregate["daily"] = [group_daily[k] for k in sorted(group_daily)]
             stats_by_id[group_id] = aggregate
         items = []
         matched_count = 0
@@ -132,6 +138,7 @@ def adgroup_stats(days: int = 7):
                 "clkCnt": stat["clkCnt"] if stat and stat["_clk"] else None,
                 "convCnt": stat["ccnt"] if stat and stat["_conv"] else None,
                 "hasStats": bool(stat and any(stat[k] for k in ("_imp", "_clk", "_conv"))),
+                "daily": stat["daily"] if stat else [],
             })
         daily = []
         for key in sorted(daily_by_date):
