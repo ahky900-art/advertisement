@@ -88,6 +88,7 @@ def adgroup_stats(days: int = 7):
         since = until - timedelta(days=days - 1)
         ids = [x.get("nccAdgroupId") for x in groups if x.get("nccAdgroupId")]
         stats_by_id = {}
+        daily_by_date = {}
         stats_record_count = 0
         for start in range(0, len(ids), 100):
             batch = ids[start:start + 100]
@@ -100,6 +101,15 @@ def adgroup_stats(days: int = 7):
                 if not isinstance(row, dict):
                     continue
                 entity_id = row.get("id")
+                row_date = str(row.get("date") or row.get("dt") or row.get("dateTime") or "")[:10]
+                if row_date:
+                    day = daily_by_date.setdefault(row_date, {"date": row_date, "impCnt": 0, "clkCnt": 0, "convCnt": None})
+                    for metric in ("impCnt", "clkCnt"):
+                        if row.get(metric) is not None:
+                            day[metric] += float(row[metric])
+                    conv = row.get("convCnt", row.get("ccnt"))
+                    if conv is not None:
+                        day["convCnt"] = (day["convCnt"] or 0) + float(conv)
                 if not entity_id:
                     continue
                 current = stats_by_id.setdefault(entity_id, {"impCnt": 0, "clkCnt": 0, "_has_imp": False, "_has_clk": False})
@@ -131,6 +141,7 @@ def adgroup_stats(days: int = 7):
             "statsRecordCount": stats_record_count,
             "matchedAdgroupCount": matched_count,
             "dataStatus": "matched" if matched_count else "no_rows",
+            "daily": [daily_by_date[k] for k in sorted(daily_by_date)],
             "items": items,
         }
     except Exception as exc:
