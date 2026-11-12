@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -72,5 +72,47 @@ def adgroups():
             "status": x.get("status"),
         } for x in raw]
         return {"count": len(items), "items": items}
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+
+@app.get("/api/naver/adgroup-stats")
+def adgroup_stats(days: int = 7):
+    if days < 1 or days > 30:
+        raise HTTPException(status_code=400, detail="days는 1~30 범위여야 합니다.")
+    try:
+        client = get_ad_client()
+        groups = client.get_adgroups()
+        # Use Korea local calendar dates; report range includes today and previous days.
+        kst = timezone(timedelta(hours=9))
+        until = datetime.now(kst).date()
+        since = until - timedelta(days=days - 1)
+        ids = [x.get("nccAdgroupId") for x in groups if x.get("nccAdgroupId")]
+        stats_by_id = {}
+        for start in range(0, len(ids), 100):
+            batch = ids[start:start + 100]
+            raw = client.get_stats(batch, since.isoformat(), until.isoformat())
+            records = raw.get("data", []) if isinstance(raw, dict) else raw
+            for row in records or []:
+                if isinstance(row, dict) and row.get("id"):
+                    stats_by_id[row["id"]] = row
+        items = []
+        for group in groups:
+            group_id = group.get("nccAdgroupId")
+            stat = stats_by_id.get(group_id, {})
+            items.append({
+                "id": group_id,
+                "name": group.get("name"),
+                "status": group.get("status"),
+                "impCnt": stat.get("impCnt"),
+                "clkCnt": stat.get("clkCnt"),
+            })
+        return {
+            "since": since.isoformat(),
+            "until": until.isoformat(),
+            "days": days,
+            "count": len(items),
+            "items": items,
+        }
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc))
