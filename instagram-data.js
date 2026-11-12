@@ -1,4 +1,5 @@
-// Windsor.ai Instagram organic media snapshot; refreshed 2026-11-12; last 30 days.\nwindow.INSTAGRAM_MEDIA = [
+// Windsor.ai Instagram organic media snapshot; refreshed 2026-11-12; last 30 days.
+window.INSTAGRAM_MEDIA = [
   {
     "date": "2026-11-07 23:10",
     "type": "REELS",
@@ -194,4 +195,4 @@
     "interactions": 1,
     "url": "https://www.instagram.com/p/DflwYAUyYTV/"
   }
-];\n
+];
