@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import hmac
+import json
 import time
 
 import requests
@@ -52,3 +53,12 @@ class NaverSearchAdClient:
     def get_adgroups(self, campaign_id=None):
         params = {"nccCampaignId": campaign_id} if campaign_id else None
         return self._request("GET", "/ncc/adgroups", params=params)
+
+    def get_stats(self, entity_ids, since, until):
+        # Naver Stat API accepts a homogeneous list of entity IDs per request.
+        params = {
+            "ids": entity_ids,
+            "fields": json.dumps(["impCnt", "clkCnt"]),
+            "timeRange": json.dumps({"since": since, "until": until}),
+        }
+        return self._request("GET", "/stats", params=params)
