@@ -86,54 +86,57 @@ def adgroup_stats(days: int = 7):
         kst = timezone(timedelta(hours=9))
         until = datetime.now(kst).date()
         since = until - timedelta(days=days - 1)
-        ids = [x.get("nccAdgroupId") for x in groups if x.get("nccAdgroupId")]
         stats_by_id = {}
         daily_by_date = {}
         stats_record_count = 0
-        for start in range(0, len(ids), 100):
-            batch = ids[start:start + 100]
-            raw = client.get_stats(batch, since.isoformat(), until.isoformat())
+        for group in groups:
+            group_id = group.get("nccAdgroupId")
+            if not group_id:
+                continue
+            raw = client.get_stats([group_id], since.isoformat(), until.isoformat())
             records = raw.get("data", []) if isinstance(raw, dict) else raw
             if not isinstance(records, list):
                 records = []
             stats_record_count += len(records)
+            aggregate = {"impCnt": 0, "clkCnt": 0, "ccnt": 0, "_imp": False, "_clk": False, "_conv": False}
             for row in records:
                 if not isinstance(row, dict):
                     continue
-                entity_id = row.get("id")
-                row_date = str(row.get("date") or row.get("dt") or row.get("dateTime") or "")[:10]
-                if row_date:
-                    day = daily_by_date.setdefault(row_date, {"date": row_date, "impCnt": 0, "clkCnt": 0, "convCnt": None})
-                    for metric in ("impCnt", "clkCnt"):
-                        if row.get(metric) is not None:
-                            day[metric] += float(row[metric])
-                    conv = row.get("convCnt", row.get("ccnt"))
-                    if conv is not None:
-                        day["convCnt"] = (day["convCnt"] or 0) + float(conv)
-                if not entity_id:
-                    continue
-                current = stats_by_id.setdefault(entity_id, {"impCnt": 0, "clkCnt": 0, "convCnt": 0, "_has_imp": False, "_has_clk": False, "_has_conv": False})
-                for metric in ("impCnt", "clkCnt", "convCnt"):
-                    value = row.get(metric)
+                for field, flag in (("impCnt", "_imp"), ("clkCnt", "_clk"), ("ccnt", "_conv")):
+                    value = row.get(field)
                     if value is not None:
-                        current[metric] += float(value)
-                        current["_has_" + ("imp" if metric == "impCnt" else "clk" if metric == "clkCnt" else "conv")] = True
+                        aggregate[field] += float(value)
+                        aggregate[flag] = True
+                row_date = str(row.get("dateStart") or row.get("date") or row.get("dt") or row.get("dateTime") or "")[:10]
+                if row_date:
+                    day = daily_by_date.setdefault(row_date, {"date": row_date, "impCnt": 0, "clkCnt": 0, "ccnt": 0, "_hasConv": False})
+                    for field in ("impCnt", "clkCnt"):
+                        if row.get(field) is not None:
+                            day[field] += float(row[field])
+                    if row.get("ccnt") is not None:
+                        day["ccnt"] += float(row["ccnt"])
+                        day["_hasConv"] = True
+            stats_by_id[group_id] = aggregate
         items = []
         matched_count = 0
         for group in groups:
             group_id = group.get("nccAdgroupId")
             stat = stats_by_id.get(group_id)
-            if stat:
+            if stat and any(stat[k] for k in ("_imp", "_clk", "_conv")):
                 matched_count += 1
             items.append({
                 "id": group_id,
                 "name": group.get("name"),
                 "status": group.get("status"),
-                "impCnt": stat["impCnt"] if stat and stat["_has_imp"] else None,
-                "clkCnt": stat["clkCnt"] if stat and stat["_has_clk"] else None,
-                "convCnt": stat["convCnt"] if stat and stat["_has_conv"] else None,
-                "hasStats": bool(stat),
+                "impCnt": stat["impCnt"] if stat and stat["_imp"] else None,
+                "clkCnt": stat["clkCnt"] if stat and stat["_clk"] else None,
+                "convCnt": stat["ccnt"] if stat and stat["_conv"] else None,
+                "hasStats": bool(stat and any(stat[k] for k in ("_imp", "_clk", "_conv"))),
             })
+        daily = []
+        for key in sorted(daily_by_date):
+            row = daily_by_date[key]
+            daily.append({"date": row["date"], "impCnt": row["impCnt"], "clkCnt": row["clkCnt"], "convCnt": row["ccnt"] if row["_hasConv"] else None})
         return {
             "since": since.isoformat(),
             "until": until.isoformat(),
@@ -142,7 +145,7 @@ def adgroup_stats(days: int = 7):
             "statsRecordCount": stats_record_count,
             "matchedAdgroupCount": matched_count,
             "dataStatus": "matched" if matched_count else "no_rows",
-            "daily": [daily_by_date[k] for k in sorted(daily_by_date)],
+            "daily": daily,
             "items": items,
         }
     except Exception as exc:
