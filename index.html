@@ -30,5 +30,20 @@ function block(x,buttons){return `<div class="reco"><b>${x.icon}　${x.title}</b
 function render(){let n=items.filter(x=>x.s==='pending').length;document.getElementById('count').textContent=n;document.getElementById('pending').textContent='승인 대기 '+n+'건';document.getElementById('homeReco').innerHTML=items.filter(x=>x.s==='pending').map(x=>block(x,false)).join('')||'대기 항목 없음';document.getElementById('approvalList').innerHTML=items.map(x=>block(x,true)).join('')}
 function decide(id,s){let x=items.find(y=>y.id===id);if(!x||x.s!=='pending')return;x.s=s;document.getElementById('history').textContent=new Date().toLocaleString('ko-KR')+' · '+x.title+' · '+(s==='approved'?'승인(데모)':'반려');render();alert('데모 처리 완료. 실제 광고 계정에는 반영되지 않았습니다.')}
 function chart(){let c=document.getElementById('chart');if(!c)return;let r=c.getBoundingClientRect(),d=window.devicePixelRatio||1;c.width=r.width*d;c.height=r.height*d;let x=c.getContext('2d');x.scale(d,d);let w=r.width,h=r.height,p=28;x.strokeStyle='#2a3d55';x.fillStyle='#91a4bb';x.font='10px Arial';for(let i=0;i<5;i++){let y=12+(h-42)*i/4;x.beginPath();x.moveTo(p,y);x.lineTo(w-10,y);x.stroke()}function line(a,col){x.beginPath();a.forEach((v,i)=>{let xx=p+(w-p-15)*i/6,yy=h-28-v/210*(h-42);i?x.lineTo(xx,yy):x.moveTo(xx,yy)});x.strokeStyle=col;x.lineWidth=2.5;x.stroke()}line([90,115,108,145,132,170,195],'#42d2bd');line([45,52,48,60,57,67,72],'#79aaff');['11/06','11/07','11/08','11/09','11/10','11/11','11/12'].forEach((v,i)=>{x.fillStyle='#91a4bb';x.fillText(v,p+(w-p-15)*i/6-12,h-7)})}
+
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function renderInstagram(){
+ const rows=window.INSTAGRAM_MEDIA||[];
+ const filter=document.getElementById('igFilter')?.value||'ALL';
+ const shown=rows.filter(x=>filter==='ALL'||(filter==='REELS'?x.type==='REELS':x.type!=='REELS'));
+ const totalViews=rows.reduce((s,x)=>s+(x.views||0),0), totalReach=rows.reduce((s,x)=>s+(x.reach||0),0);
+ const reels=rows.filter(x=>x.type==='REELS'), avgWatch=reels.reduce((s,x)=>s+(x.watch||0),0)/Math.max(reels.length,1), avgSkip=reels.reduce((s,x)=>s+(x.skip||0),0)/Math.max(reels.length,1);
+ const cards=[['게시 콘텐츠',rows.length+'건','최근 30일'],['전체 조회수',totalViews.toLocaleString('ko-KR')+'회','유기적 콘텐츠'],['합산 도달',totalReach.toLocaleString('ko-KR')+'회','게시물별 도달 합계'],['릴스 평균 시청', (avgWatch/1000).toFixed(1)+'초','릴스 '+reels.length+'건']];
+ document.getElementById('igKpis').innerHTML=cards.map(x=>'<div class="card"><div class="klabel">'+x[0]+'</div><div class="value">'+x[1]+'</div><small class="muted">'+x[2]+'</small></div>').join('');
+ document.getElementById('igRows').innerHTML=shown.map(x=>'<tr><td>'+esc(x.date)+'</td><td><span class="tag">'+(x.type==='REELS'?'릴스':x.type==='IMAGE'?'이미지':'캐러셀')+'</span></td><td style="max-width:270px;white-space:normal">'+esc(x.caption)+'</td><td>'+x.views.toLocaleString('ko-KR')+'</td><td>'+x.reach.toLocaleString('ko-KR')+'</td><td>'+(x.watch==null?'—':(x.watch/1000).toFixed(1)+'초')+'</td><td>'+(x.skip==null?'—':(x.skip*100).toFixed(1)+'%')+'</td><td>'+x.saves+'</td><td>'+x.shares+'</td><td><a href="'+esc(x.url)+'" target="_blank" rel="noopener" style="color:var(--blue)">인스타 보기 ↗</a></td></tr>').join('');
+ document.getElementById('igReelSummary').innerHTML='<p>릴스 평균 시청 시간: <b>'+(avgWatch/1000).toFixed(2)+'초</b></p><p>첫 3초 건너뛰기율 평균: <b>'+(avgSkip*100).toFixed(1)+'%</b></p><p>저장 '+reels.reduce((s,x)=>s+x.saves,0)+'회 · 공유 '+reels.reduce((s,x)=>s+x.shares,0)+'회 · 상호작용 '+reels.reduce((s,x)=>s+x.interactions,0)+'회</p><p>※ 릴스 평균은 현재 조회된 '+reels.length+'개 콘텐츠의 단순 평균입니다.</p>';
+}
+renderInstagram();
+
 render();chart();window.onresize=chart;
 </script></body></html>
