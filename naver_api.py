@@ -58,7 +58,7 @@ class NaverSearchAdClient:
         # Naver Stat API accepts a homogeneous list of entity IDs per request.
         params = {
             "ids": entity_ids,
-            "fields": json.dumps(["impCnt", "clkCnt"]),
+            "fields": json.dumps(["impCnt", "clkCnt", "convCnt"]),
             "timeRange": json.dumps({"since": since, "until": until}),
             "timeIncrement": "1",
         }
