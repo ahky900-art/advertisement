@@ -83,35 +83,54 @@ def adgroup_stats(days: int = 7):
     try:
         client = get_ad_client()
         groups = client.get_adgroups()
-        # Use Korea local calendar dates; report range includes today and previous days.
         kst = timezone(timedelta(hours=9))
         until = datetime.now(kst).date()
         since = until - timedelta(days=days - 1)
         ids = [x.get("nccAdgroupId") for x in groups if x.get("nccAdgroupId")]
         stats_by_id = {}
+        stats_record_count = 0
         for start in range(0, len(ids), 100):
             batch = ids[start:start + 100]
             raw = client.get_stats(batch, since.isoformat(), until.isoformat())
             records = raw.get("data", []) if isinstance(raw, dict) else raw
-            for row in records or []:
-                if isinstance(row, dict) and row.get("id"):
-                    stats_by_id[row["id"]] = row
+            if not isinstance(records, list):
+                records = []
+            stats_record_count += len(records)
+            for row in records:
+                if not isinstance(row, dict):
+                    continue
+                entity_id = row.get("id")
+                if not entity_id:
+                    continue
+                current = stats_by_id.setdefault(entity_id, {"impCnt": 0, "clkCnt": 0, "_has_imp": False, "_has_clk": False})
+                for metric in ("impCnt", "clkCnt"):
+                    value = row.get(metric)
+                    if value is not None:
+                        current[metric] += float(value)
+                        current["_has_" + ("imp" if metric == "impCnt" else "clk")] = True
         items = []
+        matched_count = 0
         for group in groups:
             group_id = group.get("nccAdgroupId")
-            stat = stats_by_id.get(group_id, {})
+            stat = stats_by_id.get(group_id)
+            if stat:
+                matched_count += 1
             items.append({
                 "id": group_id,
                 "name": group.get("name"),
                 "status": group.get("status"),
-                "impCnt": stat.get("impCnt"),
-                "clkCnt": stat.get("clkCnt"),
+                "impCnt": stat["impCnt"] if stat and stat["_has_imp"] else None,
+                "clkCnt": stat["clkCnt"] if stat and stat["_has_clk"] else None,
+                "hasStats": bool(stat),
             })
         return {
             "since": since.isoformat(),
             "until": until.isoformat(),
             "days": days,
             "count": len(items),
+            "statsRecordCount": stats_record_count,
+            "matchedAdgroupCount": matched_count,
+            "dataStatus": "matched" if matched_count else "no_rows",
             "items": items,
         }
     except Exception as exc:
