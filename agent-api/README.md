@@ -1,38 +1,36 @@
-# AI Sales Agent (initial scaffold)
+# AI Sales Agent API
 
-This service is intentionally separate from the existing dashboard.
+독립형 AI 판매대행 에이전트 백엔드입니다. 기존 대시보드 및 네이버 광고 API 서버와 분리되어 있습니다.
 
-## Current scope
-- `GET /health`: service health
-- `POST /agent/chat`: LLM chat
-- `GET /agent/capabilities`: explicit capability status
-- Existing dashboard APIs are not modified.
-- No external write actions are implemented.
-- No sales or advertising figures are fabricated.
+## Endpoints
+- GET /health
+- GET /data/products?size=20 — 네이버 스마트스토어 상품 목록(읽기 전용)
+- GET /data/overview — 데이터 소스 연결 상태
+- POST /agent/chat — 상품·광고 데이터 문맥을 사용하는 AI 채팅
+- GET /agent/capabilities
 
-## Local run
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-export OPENAI_API_KEY="..."
-export OPENAI_MODEL="gpt-4.1-mini"
-export CORS_ORIGINS="http://localhost:8000,https://ahky900-art.github.io"
-uvicorn main:app --host 0.0.0.0 --port 8000
-```
+## Render service configuration
+- Repository: https://github.com/ahky900-art/advertisement
+- Branch: feature/smartstore-products-agent-integration (merge 후 main)
+- Root Directory: (blank)
+- Build Command: pip install -r agent-api/requirements.txt
+- Start Command: uvicorn main:app --app-dir agent-api --host 0.0.0.0 --port $PORT
+- Region: Singapore
+- Plan: Free
 
-## Separate Render Web Service
-- Root Directory: `agent-api`
-- Build Command: `pip install -r requirements.txt`
-- Start Command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+## Environment variables (Render dashboard only)
+- OPENAI_API_KEY: OpenAI API key
+- OPENAI_MODEL: gpt-4.1-mini
+- CORS_ORIGINS: https://ahky900-art.github.io
+- NAVER_ADS_API_BASE: https://advertisement-naver-api-ymb4.onrender.com
+- NAVER_COMMERCE_CLIENT_ID: Commerce API application ID
+- NAVER_COMMERCE_CLIENT_SECRET: Commerce API application secret (bcrypt salt string)
+- NAVER_COMMERCE_ACCOUNT_ID: seller account ID/UID used with type=SELLER
 
-Set `OPENAI_API_KEY` and `CORS_ORIGINS` as Render environment variables. Never put provider secrets in browser code or GitHub.
+Commerce API authentication follows Naver's OAuth2 client-credentials flow: bcrypt(client_id + "_" + timestamp, client_secret), Base64 encoded, with type=SELLER and account_id. Product list lookup is POST /external/v1/products/search. All integration calls are read-only.
 
-## Required next steps before autonomous operation
-1. Verify the existing Naver Ads API read endpoints and response schemas.
-2. Add read-only adapters for ads, Instagram, products, orders and cost data.
-3. Add durable storage for conversations, plans, approvals and audit logs.
-4. Implement allow-listed actions with approval tokens, idempotency keys and execution logs.
-5. Test read/write boundaries before enabling external actions.
-
-The current chat endpoint is an LLM assistant scaffold, not yet an autonomous sales agent.
+## Security and limitations
+- Provider credentials must never be committed to GitHub or placed in browser code.
+- No product, price, inventory, order, ad budget, or social-post write operations are implemented.
+- Orders and sales are not connected yet.
+- No durable approval queue or audit log exists yet.
