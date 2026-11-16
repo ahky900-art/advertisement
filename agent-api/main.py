@@ -145,3 +145,177 @@ def chat(req:ChatRequest):
 @app.get("/agent/capabilities")
 def capabilities():
     return {"chat":bool(os.getenv("OPENAI_API_KEY")),"read_only_data_connectors":{"naver_commerce_products":commerce_configured(),"naver_search_ads":True,"instagram_snapshot":True,"orders_and_sales":False},"task_approval":False,"external_execution":False}
+
+
+# --- Agent workflows: analysis first, approval before every external write ---
+import sqlite3
+from pathlib import Path
+from typing import Optional
+from fastapi import Body
+
+DB_PATH = os.getenv("AGENT_DB_PATH", "/tmp/agent-approvals.sqlite3")
+
+def db():
+    con = sqlite3.connect(DB_PATH)
+    con.row_factory = sqlite3.Row
+    con.execute("""CREATE TABLE IF NOT EXISTS approvals (
+      id TEXT PRIMARY KEY, agent_type TEXT NOT NULL, channel TEXT NOT NULL,
+      action_type TEXT NOT NULL, payload TEXT NOT NULL, rationale TEXT NOT NULL,
+      status TEXT NOT NULL, created_at TEXT NOT NULL, decided_at TEXT
+    )""")
+    return con
+
+class PricingInput(BaseModel):
+    product_id: str
+    sale_price: float = Field(gt=0)
+    raw_material_cost: float = Field(ge=0)
+    labor_cost: float = Field(ge=0, default=0)
+    vegetable_cost: float = Field(ge=0, default=0)
+    packaging_cost: float = Field(ge=0, default=0)
+    shipping_cost: float = Field(ge=0, default=0)
+    platform_fee_rate: float = Field(ge=0, le=1, default=0)
+    ad_cost_per_order: float = Field(ge=0, default=0)
+    target_margin_rate: float = Field(ge=0, le=0.9, default=0.1)
+    competitor_price: Optional[float] = Field(default=None, gt=0)
+    stock_quantity: Optional[int] = Field(default=None, ge=0)
+
+class SourcingInput(BaseModel):
+    product_name: str = Field(min_length=1, max_length=200)
+    keyword_metrics: list[dict] = Field(default_factory=list)
+    competitor_observations: list[dict] = Field(default_factory=list)
+    social_observations: list[dict] = Field(default_factory=list)
+    seasonality_observations: list[dict] = Field(default_factory=list)
+
+class CSDraftInput(BaseModel):
+    channel: str
+    customer_message: str = Field(min_length=1, max_length=5000)
+    product_facts: dict = Field(default_factory=dict)
+    approved_guides: list[str] = Field(default_factory=list)
+
+class ApprovalInput(BaseModel):
+    agent_type: str
+    channel: str
+    action_type: str
+    payload: dict
+    rationale: str = Field(min_length=1, max_length=3000)
+
+@app.post("/agent/sourcing/analyze")
+def sourcing_analyze(req: SourcingInput):
+    # Never claim private competitor sales volume. Only score the observations supplied.
+    def avg(values):
+        nums = [float(v) for v in values if isinstance(v, (int,float))]
+        return sum(nums)/len(nums) if nums else None
+    keyword_rows = []
+    for row in req.keyword_metrics:
+        keyword_rows.append({
+            "keyword": str(row.get("keyword","")),
+            "trend_score": row.get("trend_score"),
+            "search_volume": row.get("search_volume"),
+            "source": row.get("source","not_specified"),
+            "recommendation": "검토 대상" if row.get("trend_score") is not None else "추세 데이터 필요"
+        })
+    return {
+      "agent":"sourcing","product":req.product_name,"status":"analysis_only",
+      "keywords":keyword_rows,
+      "competitor_observations":req.competitor_observations,
+      "social_observations":req.social_observations,
+      "seasonality_observations":req.seasonality_observations,
+      "limitations":["경쟁사 실제 주문량·매출은 제공되지 않으면 추정하지 않습니다.","관측값이 없는 항목은 미확인으로 유지합니다."],
+      "next_step":"추천 키워드·상품명·광고문구는 승인 요청으로 등록한 뒤 별도 승인 전에는 게시하지 않습니다.",
+      "updated_at":datetime.now(timezone.utc).isoformat()
+    }
+
+@app.post("/agent/pricing/analyze")
+def pricing_analyze(req: PricingInput):
+    cost = req.raw_material_cost + req.labor_cost + req.vegetable_cost + req.packaging_cost + req.shipping_cost + req.ad_cost_per_order
+    denominator = 1 - req.platform_fee_rate - req.target_margin_rate
+    if denominator <= 0:
+        raise HTTPException(status_code=400, detail="수수료율과 목표 마진율의 합은 100% 미만이어야 합니다.")
+    min_price = cost / (1 - req.platform_fee_rate)
+    target_price = cost / denominator
+    fee = req.sale_price * req.platform_fee_rate
+    contribution = req.sale_price - cost - fee
+    margin = contribution / req.sale_price
+    return {
+      "agent":"pricing","product_id":req.product_id,"status":"analysis_only",
+      "current_sale_price":round(req.sale_price),"total_variable_cost":round(cost),
+      "platform_fee_estimate":round(fee),"contribution_profit":round(contribution),
+      "contribution_margin_rate":round(margin,4),
+      "break_even_price":round(min_price),"target_margin_price":round(target_price),
+      "below_break_even":req.sale_price < min_price,
+      "below_target_margin":req.sale_price < target_price,
+      "competitor_price":req.competitor_price,"stock_quantity":req.stock_quantity,
+      "recommendation":"가격·구성 조정 검토" if req.sale_price < target_price else "현재 가격 유지 검토",
+      "warning":"수수료·원가·배송 부담 주체를 실제 계약 및 정산 데이터로 확인해야 합니다.",
+      "updated_at":datetime.now(timezone.utc).isoformat()
+    }
+
+@app.post("/agent/cs/draft")
+def cs_draft(req: CSDraftInput):
+    key = os.getenv("OPENAI_API_KEY")
+    if not key:
+        raise HTTPException(status_code=503, detail="OPENAI_API_KEY 미설정: 실제 AI 답변 생성은 비활성 상태입니다.")
+    try:
+        from openai import OpenAI
+        prompt = {"channel":req.channel,"customer_message":req.customer_message,"verified_product_facts":req.product_facts,"approved_guides":req.approved_guides}
+        response = OpenAI(api_key=key).responses.create(
+          model=os.getenv("OPENAI_MODEL","gpt-4.1-mini"),
+          instructions="한국 온라인 식품 판매 CS 초안 작성자. 제공된 검증 사실과 승인된 가이드만 사용한다. 사실이 없으면 확인 필요라고 말한다. 환불·보상·식품안전·원산지 분쟁은 확답하지 말고 담당자 확인으로 분류한다. 메시지를 전송하지 말고 답변 초안과 위험 분류만 반환한다.",
+          input=json.dumps(prompt,ensure_ascii=False)
+        )
+        return {"agent":"cs","status":"draft_only","reply_draft":response.output_text,"send_allowed":False,"requires_human_review":True}
+    except Exception as exc:
+        raise HTTPException(status_code=502,detail="CS 초안 생성 실패: "+type(exc).__name__)
+
+@app.post("/agent/approvals")
+def create_approval(req: ApprovalInput):
+    import uuid
+    approval_id = "APR-" + uuid.uuid4().hex[:12].upper()
+    created = datetime.now(timezone.utc).isoformat()
+    con = db()
+    con.execute("INSERT INTO approvals VALUES (?,?,?,?,?,?,?,?,?)", (
+      approval_id,req.agent_type,req.channel,req.action_type,
+      json.dumps(req.payload,ensure_ascii=False),req.rationale,"pending",created,None
+    ))
+    con.commit(); con.close()
+    return {"approval_id":approval_id,"status":"pending","created_at":created,"execution_performed":False}
+
+@app.get("/agent/approvals")
+def list_approvals(status: str = Query(default="pending")):
+    con=db()
+    rows=con.execute("SELECT * FROM approvals WHERE status=? ORDER BY created_at DESC",(status,)).fetchall()
+    con.close()
+    return {"items":[{**dict(x),"payload":json.loads(x["payload"])} for x in rows]}
+
+@app.post("/agent/approvals/{approval_id}/approve")
+def approve_approval(approval_id: str):
+    # Approval records authorization only. No channel write is performed by this MVP.
+    con=db()
+    cur=con.execute("UPDATE approvals SET status='approved',decided_at=? WHERE id=? AND status='pending'",
+      (datetime.now(timezone.utc).isoformat(),approval_id))
+    con.commit(); con.close()
+    if cur.rowcount == 0:
+        raise HTTPException(status_code=404,detail="대기 중인 승인 건을 찾을 수 없습니다.")
+    return {"approval_id":approval_id,"status":"approved","execution_performed":False,"message":"승인 기록 완료. 외부 채널 실행 어댑터는 아직 연결되지 않았습니다."}
+
+@app.post("/agent/approvals/{approval_id}/reject")
+def reject_approval(approval_id: str):
+    con=db()
+    cur=con.execute("UPDATE approvals SET status='rejected',decided_at=? WHERE id=? AND status='pending'",
+      (datetime.now(timezone.utc).isoformat(),approval_id))
+    con.commit(); con.close()
+    if cur.rowcount == 0:
+        raise HTTPException(status_code=404,detail="대기 중인 승인 건을 찾을 수 없습니다.")
+    return {"approval_id":approval_id,"status":"rejected","execution_performed":False}
+
+@app.get("/agent/capabilities")
+def capabilities_v2():
+    return {
+      "chat":bool(os.getenv("OPENAI_API_KEY")),
+      "sourcing_analysis":True,"pricing_calculation":True,"cs_draft":bool(os.getenv("OPENAI_API_KEY")),
+      "approval_queue":True,
+      "external_execution":False,
+      "connected_channels":{"naver_smartstore_products":commerce_configured(),"naver_ads":True,"instagram_live_api":False},
+      "limitations":["승인 기능은 승인 이력만 기록하며 외부 변경은 실행하지 않습니다.","승인 DB는 AGENT_DB_PATH 기본값(/tmp)의 임시 저장입니다. 영구 보존에는 PostgreSQL 연결이 필요합니다.","Instagram은 현재 라이브 API가 아닌 기존 대시보드 스냅샷만 확인 가능합니다."]
+    }
+}
