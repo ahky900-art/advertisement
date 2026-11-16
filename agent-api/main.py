@@ -399,7 +399,8 @@ def youtube_public_video(video_id: str):
 def capabilities_v2():
     return {
       "chat":bool(os.getenv("OPENAI_API_KEY")),
-      "sourcing_analysis":True,"pricing_calculation":True,"cs_draft":bool(os.getenv("OPENAI_API_KEY")),\n      "youtube_public_data":bool(os.getenv("YOUTUBE_API_KEY")),
+      "sourcing_analysis":True,"pricing_calculation":True,"cs_draft":bool(os.getenv("OPENAI_API_KEY")),
+      "youtube_public_data":bool(os.getenv("YOUTUBE_API_KEY")),
       "approval_queue":True,
       "external_execution":False,
       "connected_channels":{"naver_smartstore_products":commerce_configured(),"naver_ads":True,"instagram_live_api":False},
