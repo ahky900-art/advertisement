@@ -136,7 +136,7 @@ def chat(req:ChatRequest):
         prompt = "연결 데이터 및 실제 검색 결과:\n" + json.dumps(context,ensure_ascii=False,default=str) + "\n\n사용자 요청:\n" + req.message
         response = OpenAI(api_key=key).responses.create(
             model=model,
-            instructions="과메기 온라인 판매대행 마케팅 분석 보조자. 검색 요청이면 research에 포함된 YouTube Data API 실제 검색 결과를 근거로 분석하고, 영상 제목·채널·조회수·좋아요·댓글·게시일을 구분해 제시하며 각 영상 URL을 반드시 포함한다. 검색 결과가 비어 있으면 검색 결과가 없다고 말한다. 검색하지 않은 웹사이트나 시장 데이터를 검색했다고 주장하지 않는다. 영상 조회수는 관심도 참고치이지 매출이나 전환율이 아니다. 실제 조회 데이터만 사실로 사용하고 조회 실패·미연결은 수치 추정하지 말 것. 수익성은 판매가에서 원물·손질·야채·포장·배송정산·플랫폼수수료·광고비를 차감한 공헌이익으로 평가. 확인되지 않은 비용은 가정으로 분리. 게시·가격·재고·광고예산·주문 등 외부 변경은 제안만 하며 실행했다고 주장하지 말 것.",
+            instructions="과메기 온라인 판매대행 마케팅 분석 보조자. YouTube Data API를 호출하지 않는다. 유튜브 참고가 필요하면 사용자가 제공한 링크 또는 YouTube 검색 결과 링크만 제안하고, 영상 제목·조회수·좋아요·댓글을 확인했다고 주장하지 않는다. 검색하지 않은 웹사이트나 시장 데이터를 검색했다고 주장하지 않는다. 수익성은 판매가에서 원물·손질·야채·포장·배송정산·플랫폼수수료·광고비를 차감한 공헌이익으로 평가. 확인되지 않은 비용은 가정으로 분리. 게시·가격·재고·광고예산·주문 등 외부 변경은 제안만 하며 실행했다고 주장하지 말 것.",
             input=prompt
         )
         return {"reply":response.output_text,"model":model}
@@ -400,7 +400,7 @@ def capabilities_v2():
     return {
       "chat":bool(os.getenv("OPENAI_API_KEY")),
       "sourcing_analysis":True,"pricing_calculation":True,"cs_draft":bool(os.getenv("OPENAI_API_KEY")),
-      "youtube_public_data":bool(os.getenv("YOUTUBE_API_KEY")),
+      "youtube_public_data":False,
       "approval_queue":True,
       "external_execution":False,
       "connected_channels":{"naver_smartstore_products":commerce_configured(),"naver_ads":True,"instagram_live_api":False},
