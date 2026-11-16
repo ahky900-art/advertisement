@@ -142,7 +142,7 @@ def chat(req:ChatRequest):
     except Exception as exc:
         raise HTTPException(status_code=502,detail=f"LLM 요청 실패: {type(exc).__name__}") from exc
 
-@app.get("/agent/capabilities")
+@app.get("/agent/capabilities/legacy")
 def capabilities():
     return {"chat":bool(os.getenv("OPENAI_API_KEY")),"read_only_data_connectors":{"naver_commerce_products":commerce_configured(),"naver_search_ads":True,"instagram_snapshot":True,"orders_and_sales":False},"task_approval":False,"external_execution":False}
 
