@@ -308,11 +308,57 @@ def reject_approval(approval_id: str):
         raise HTTPException(status_code=404,detail="대기 중인 승인 건을 찾을 수 없습니다.")
     return {"approval_id":approval_id,"status":"rejected","execution_performed":False}
 
+@app.get("/youtube/video/{video_id}")
+def youtube_public_video(video_id: str):
+    import re
+    if not re.fullmatch(r"[A-Za-z0-9_-]{11}", video_id):
+        raise HTTPException(status_code=400, detail="유효하지 않은 YouTube 영상 ID입니다.")
+    api_key = os.getenv("YOUTUBE_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="Render 환경변수 YOUTUBE_API_KEY가 설정되지 않았습니다.")
+    try:
+        response = requests.get("https://www.googleapis.com/youtube/v3/videos", params={
+            "part":"snippet,statistics,contentDetails",
+            "id":video_id,
+            "key":api_key
+        }, timeout=20)
+        data = response.json()
+        if not response.ok:
+            reason = (data.get("error") or {}).get("errors", [{}])[0].get("reason", "YouTube API 오류")
+            raise HTTPException(status_code=502, detail=f"YouTube Data API 오류: {reason}")
+        items = data.get("items") or []
+        if not items:
+            raise HTTPException(status_code=404, detail="영상을 찾을 수 없거나 공개 조회가 제한되어 있습니다.")
+        item = items[0]
+        snippet = item.get("snippet", {})
+        stats = item.get("statistics", {})
+        return {
+            "video_id":video_id,
+            "url":"https://www.youtube.com/watch?v="+video_id,
+            "title":snippet.get("title"),
+            "channel_title":snippet.get("channelTitle"),
+            "channel_id":snippet.get("channelId"),
+            "published_at":snippet.get("publishedAt"),
+            "description":snippet.get("description"),
+            "tags":snippet.get("tags", []),
+            "thumbnail":(snippet.get("thumbnails", {}).get("high") or snippet.get("thumbnails", {}).get("default") or {}).get("url"),
+            "view_count":int(stats["viewCount"]) if "viewCount" in stats else None,
+            "like_count":int(stats["likeCount"]) if "likeCount" in stats else None,
+            "comment_count":int(stats["commentCount"]) if "commentCount" in stats else None,
+            "duration":item.get("contentDetails", {}).get("duration"),
+            "source":"YouTube Data API v3",
+            "updated_at":datetime.now(timezone.utc).isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="YouTube 공개 데이터 조회 실패: "+type(exc).__name__)
+
 @app.get("/agent/capabilities")
 def capabilities_v2():
     return {
       "chat":bool(os.getenv("OPENAI_API_KEY")),
-      "sourcing_analysis":True,"pricing_calculation":True,"cs_draft":bool(os.getenv("OPENAI_API_KEY")),
+      "sourcing_analysis":True,"pricing_calculation":True,"cs_draft":bool(os.getenv("OPENAI_API_KEY")),\n      "youtube_public_data":bool(os.getenv("YOUTUBE_API_KEY")),
       "approval_queue":True,
       "external_execution":False,
       "connected_channels":{"naver_smartstore_products":commerce_configured(),"naver_ads":True,"instagram_live_api":False},
