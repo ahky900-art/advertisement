@@ -1,43 +1,43 @@
-// Windsor.ai Instagram organic media snapshot; refreshed 2026-11-12; last 30 days.
+// Windsor.ai Instagram organic media snapshot; read on 2026-11-16. Latest returned media published 2026-11-13. Force refresh unavailable on current Windsor trial plan.
 window.INSTAGRAM_MEDIA = [
   {
-    "date": "2026-11-07 23:10",
+    "date": "2026-11-13 09:00",
     "type": "REELS",
-    "caption": "바닷바람 맞으며 제대로 말려 윤기부터 다른 과메기 ✨ 쫀득한 식감에 고소한 감칠맛 그대로",
-    "views": 187,
-    "reach": 156,
-    "watch": 2568,
-    "skip": 0.853,
-    "saves": 0,
-    "shares": 0,
-    "interactions": 2,
-    "url": "https://www.instagram.com/reel/DfdVF88yolr/"
-  },
-  {
-    "date": "2026-11-07 23:08",
-    "type": "REELS",
-    "caption": "바닷바람 맞으며 제대로 말려 윤기부터 다른 과메기 ✨ 쫀득한 식감에 고소한 감칠맛 그대로",
-    "views": 212,
-    "reach": 170,
-    "watch": 2878,
-    "skip": 0.795,
+    "caption": "",
+    "views": 117,
+    "reach": 107,
+    "watch": 1890,
+    "skip": 0.879,
     "saves": 0,
     "shares": 0,
     "interactions": 0,
-    "url": "https://www.instagram.com/reel/DfdU2vTys6f/"
+    "url": "https://www.instagram.com/reel/DfrQiFUBiYI/"
   },
   {
-    "date": "2026-11-08 08:35",
+    "date": "2026-11-13 08:55",
+    "type": "REELS",
+    "caption": "바닷바람 맞으며 제대로 말려 윤기부터 다른 과메기 ✨ 쫀득-한 식감에 고소한 감칠맛 그대로",
+    "views": 103,
+    "reach": 100,
+    "watch": 2120,
+    "skip": 0.87,
+    "saves": 0,
+    "shares": 0,
+    "interactions": 0,
+    "url": "https://www.instagram.com/reel/DfrP_7RhM2R/"
+  },
+  {
+    "date": "2026-11-11 05:42",
     "type": "IMAGE",
-    "caption": "알고 먹으면 더 맛있는 과메기, 쌀쌀한 요즘 더 생각나는 과메기",
-    "views": 11,
-    "reach": 3,
+    "caption": "새콤한 과메기 무침 요리 어때요? 입맛이 싹 돌지 않나요",
+    "views": 4,
+    "reach": 2,
     "watch": null,
     "skip": null,
     "saves": 0,
     "shares": 0,
-    "interactions": 0,
-    "url": "https://www.instagram.com/p/DfeV04nRGSs/"
+    "interactions": 1,
+    "url": "https://www.instagram.com/p/DflwYAUyYTV/"
   },
   {
     "date": "2026-11-09 22:41",
@@ -183,16 +183,42 @@ window.INSTAGRAM_MEDIA = [
     "url": "https://www.instagram.com/reel/DfgVbHaS_Y1/"
   },
   {
-    "date": "2026-11-11 05:42",
+    "date": "2026-11-08 08:35",
     "type": "IMAGE",
-    "caption": "새콤한 과메기 무침 요리 어때요? 입맛이 싹 돌지 않나요",
-    "views": 4,
-    "reach": 2,
+    "caption": "알고 먹으면 더 맛있는 과메기, 쌀쌀한 요즘 더 생각나는 과메기",
+    "views": 11,
+    "reach": 3,
     "watch": null,
     "skip": null,
     "saves": 0,
     "shares": 0,
-    "interactions": 1,
-    "url": "https://www.instagram.com/p/DflwYAUyYTV/"
+    "interactions": 0,
+    "url": "https://www.instagram.com/p/DfeV04nRGSs/"
+  },
+  {
+    "date": "2026-11-07 23:10",
+    "type": "REELS",
+    "caption": "바닷바람 맞으며 제대로 말려 윤기부터 다른 과메기 ✨ 쫀득한 식감에 고소한 감칠맛 그대로",
+    "views": 187,
+    "reach": 156,
+    "watch": 2568,
+    "skip": 0.853,
+    "saves": 0,
+    "shares": 0,
+    "interactions": 2,
+    "url": "https://www.instagram.com/reel/DfdVF88yolr/"
+  },
+  {
+    "date": "2026-11-07 23:08",
+    "type": "REELS",
+    "caption": "바닷바람 맞으며 제대로 말려 윤기부터 다른 과메기 ✨ 쫀득한 식감에 고소한 감칠맛 그대로",
+    "views": 212,
+    "reach": 170,
+    "watch": 2878,
+    "skip": 0.795,
+    "saves": 0,
+    "shares": 0,
+    "interactions": 0,
+    "url": "https://www.instagram.com/reel/DfdU2vTys6f/"
   }
 ];
