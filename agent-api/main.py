@@ -318,4 +318,3 @@ def capabilities_v2():
       "connected_channels":{"naver_smartstore_products":commerce_configured(),"naver_ads":True,"instagram_live_api":False},
       "limitations":["승인 기능은 승인 이력만 기록하며 외부 변경은 실행하지 않습니다.","승인 DB는 AGENT_DB_PATH 기본값(/tmp)의 임시 저장입니다. 영구 보존에는 PostgreSQL 연결이 필요합니다.","Instagram은 현재 라이브 API가 아닌 기존 대시보드 스냅샷만 확인 가능합니다."]
     }
-}
