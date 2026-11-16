@@ -130,10 +130,7 @@ def chat(req:ChatRequest):
             context["smartStoreProducts"] = get_products(20)
         except Exception as exc:
             context["smartStoreProducts"] = {"error":str(exc)}
-        search_intent = any(term in req.message.lower() for term in ["검색","찾아","트렌드","광고 콘텐츠","광고컨텐츠","콘텐츠 추천","컨텐츠 추천","쇼츠 추천","영상 소재","레퍼런스","벤치마킹"])
-        if search_intent:
-            context["research"] = youtube_search_public(req.message.strip(), 8)
-        prompt = "연결 데이터 및 실제 검색 결과:\n" + json.dumps(context,ensure_ascii=False,default=str) + "\n\n사용자 요청:\n" + req.message
+        prompt = "연결 데이터(YouTube API 미사용, 링크 기반 참고만 가능):\\n" + json.dumps(context,ensure_ascii=False,default=str) + "\\n\\n사용자 요청:\\n" + req.message
         response = OpenAI(api_key=key).responses.create(
             model=model,
             instructions="과메기 온라인 판매대행 마케팅 분석 보조자. YouTube Data API를 호출하지 않는다. 유튜브 참고가 필요하면 사용자가 제공한 링크 또는 YouTube 검색 결과 링크만 제안하고, 영상 제목·조회수·좋아요·댓글을 확인했다고 주장하지 않는다. 검색하지 않은 웹사이트나 시장 데이터를 검색했다고 주장하지 않는다. 수익성은 판매가에서 원물·손질·야채·포장·배송정산·플랫폼수수료·광고비를 차감한 공헌이익으로 평가. 확인되지 않은 비용은 가정으로 분리. 게시·가격·재고·광고예산·주문 등 외부 변경은 제안만 하며 실행했다고 주장하지 말 것.",
