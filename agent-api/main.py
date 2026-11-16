@@ -125,15 +125,18 @@ def chat(req:ChatRequest):
     try:
         from openai import OpenAI
         model = os.getenv("OPENAI_MODEL","gpt-4.1-mini")
-        context = {"smartStoreProducts":None,"naverAds":get_ads(),"ordersAndSales":"미연결"}
+        context = {"smartStoreProducts":None,"naverAds":get_ads(),"ordersAndSales":"미연결","research":None}
         try:
             context["smartStoreProducts"] = get_products(20)
         except Exception as exc:
             context["smartStoreProducts"] = {"error":str(exc)}
-        prompt = "연결 데이터:\n" + json.dumps(context,ensure_ascii=False,default=str) + "\n\n사용자 요청:\n" + req.message
+        search_intent = any(term in req.message.lower() for term in ["검색","찾아","트렌드","광고 콘텐츠","광고컨텐츠","콘텐츠 추천","컨텐츠 추천","쇼츠 추천","영상 소재","레퍼런스","벤치마킹"])
+        if search_intent:
+            context["research"] = youtube_search_public(req.message.strip(), 8)
+        prompt = "연결 데이터 및 실제 검색 결과:\n" + json.dumps(context,ensure_ascii=False,default=str) + "\n\n사용자 요청:\n" + req.message
         response = OpenAI(api_key=key).responses.create(
             model=model,
-            instructions="과메기 온라인 판매대행 분석 보조자. 제공된 실제 조회 데이터만 사실로 사용하고 조회 실패·미연결은 수치 추정하지 말 것. 수익성은 판매가에서 원물·손질·야채·포장·배송정산·플랫폼수수료·광고비를 차감한 공헌이익으로 평가. 확인되지 않은 비용은 가정으로 분리. 게시·가격·재고·광고예산·주문 등 외부 변경은 제안만 하며 실행했다고 주장하지 말 것.",
+            instructions="과메기 온라인 판매대행 마케팅 분석 보조자. 검색 요청이면 research에 포함된 YouTube Data API 실제 검색 결과를 근거로 분석하고, 영상 제목·채널·조회수·좋아요·댓글·게시일을 구분해 제시하며 각 영상 URL을 반드시 포함한다. 검색 결과가 비어 있으면 검색 결과가 없다고 말한다. 검색하지 않은 웹사이트나 시장 데이터를 검색했다고 주장하지 않는다. 영상 조회수는 관심도 참고치이지 매출이나 전환율이 아니다. 실제 조회 데이터만 사실로 사용하고 조회 실패·미연결은 수치 추정하지 말 것. 수익성은 판매가에서 원물·손질·야채·포장·배송정산·플랫폼수수료·광고비를 차감한 공헌이익으로 평가. 확인되지 않은 비용은 가정으로 분리. 게시·가격·재고·광고예산·주문 등 외부 변경은 제안만 하며 실행했다고 주장하지 말 것.",
             input=prompt
         )
         return {"reply":response.output_text,"model":model}
@@ -307,6 +310,44 @@ def reject_approval(approval_id: str):
     if cur.rowcount == 0:
         raise HTTPException(status_code=404,detail="대기 중인 승인 건을 찾을 수 없습니다.")
     return {"approval_id":approval_id,"status":"rejected","execution_performed":False}
+
+def youtube_search_public(query: str, max_results: int = 8):
+    api_key = os.getenv("YOUTUBE_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="유튜브 검색을 사용하려면 Render 환경변수 YOUTUBE_API_KEY를 먼저 등록해야 합니다.")
+    search_response = requests.get("https://www.googleapis.com/youtube/v3/search", params={
+        "part":"snippet", "type":"video", "q":query,
+        "maxResults":max(1,min(max_results,10)), "order":"relevance",
+        "regionCode":"KR", "relevanceLanguage":"ko", "key":api_key
+    }, timeout=20)
+    search_data = search_response.json()
+    if not search_response.ok:
+        reason = (search_data.get("error") or {}).get("errors", [{}])[0].get("reason", "YouTube 검색 API 오류")
+        raise HTTPException(status_code=502, detail="YouTube 검색 실패: "+reason)
+    ids = [x.get("id",{}).get("videoId") for x in search_data.get("items",[]) if x.get("id",{}).get("videoId")]
+    if not ids:
+        return {"query":query,"items":[],"source":"YouTube Data API v3","searched_at":datetime.now(timezone.utc).isoformat()}
+    stats_response = requests.get("https://www.googleapis.com/youtube/v3/videos", params={
+        "part":"snippet,statistics,contentDetails", "id":",".join(ids), "key":api_key
+    }, timeout=20)
+    stats_data = stats_response.json()
+    if not stats_response.ok:
+        raise HTTPException(status_code=502, detail="YouTube 영상 통계 조회 실패")
+    items=[]
+    for item in stats_data.get("items",[]):
+        sn=item.get("snippet",{}); st=item.get("statistics",{}); vid=item.get("id")
+        items.append({"video_id":vid,"title":sn.get("title"),"channel_title":sn.get("channelTitle"),
+            "published_at":sn.get("publishedAt"),"description":(sn.get("description") or "")[:500],
+            "view_count":int(st["viewCount"]) if "viewCount" in st else None,
+            "like_count":int(st["likeCount"]) if "likeCount" in st else None,
+            "comment_count":int(st["commentCount"]) if "commentCount" in st else None,
+            "duration":item.get("contentDetails",{}).get("duration"),
+            "url":"https://www.youtube.com/watch?v="+vid})
+    return {"query":query,"items":items,"source":"YouTube Data API v3","searched_at":datetime.now(timezone.utc).isoformat()}
+
+@app.get("/youtube/search")
+def youtube_search_endpoint(q: str = Query(min_length=1,max_length=200), max_results: int = Query(default=8,ge=1,le=10)):
+    return youtube_search_public(q,max_results)
 
 @app.get("/youtube/video/{video_id}")
 def youtube_public_video(video_id: str):
