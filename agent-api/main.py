@@ -130,6 +130,22 @@ def normalize_product(row):
         "imageUrl": representative.get("url") if isinstance(representative.get("url"), str) and representative["url"].startswith("https://") else None
     }
 
+def get_origin_product_detail(token, origin_product_no):
+    # 상품 목록 조회는 요약 정보만 제공하므로 원상품 상세 조회 API를 추가 호출합니다.
+    url = COMMERCE + "/v2/products/origin-products/" + str(origin_product_no)
+    response = requests.get(url, headers={
+        "Authorization":"Bearer "+token,
+        "Accept":"application/json;charset=UTF-8"
+    }, timeout=20)
+    if not response.ok:
+        try:
+            body = response.json()
+            detail = body.get("message") or body.get("code") or "상세 조회 실패"
+        except Exception:
+            detail = "상세 조회 실패"
+        raise RuntimeError(f"원상품 상세 조회 HTTP {response.status_code}: {detail}")
+    return response.json()
+
 def get_products(size=20):
     if not commerce_configured():
         return {"configured":False,"count":0,"totalElements":None,"items":[],"message":"커머스 API 인증정보 미설정","updatedAt":datetime.now(timezone.utc).isoformat()}
@@ -147,9 +163,44 @@ def get_products(size=20):
     raw = data.get("contents") or data.get("items") or data.get("products") or data.get("data") or []
     if isinstance(raw, dict):
         raw = raw.get("contents") or raw.get("items") or []
-    items = [normalize_product(item) for item in raw if isinstance(item, dict)]
+    items = []
+    detail_success = 0
+    detail_failed = 0
+    for row in raw:
+        if not isinstance(row, dict):
+            continue
+        merged = dict(row)
+        origin_no = row.get("originProductNo")
+        if origin_no:
+            try:
+                detail_data = get_origin_product_detail(token, origin_no)
+                detail_origin = detail_data.get("originProduct") if isinstance(detail_data, dict) else None
+                if isinstance(detail_origin, dict):
+                    merged["originProduct"] = detail_origin
+                # 일부 응답은 채널 상품 정보를 별도 객체로 제공합니다.
+                for key in ("smartstoreChannelProduct", "channelProduct", "channelProductInfo"):
+                    value = detail_data.get(key) if isinstance(detail_data, dict) else None
+                    if isinstance(value, dict):
+                        merged[key] = value
+                detail_success += 1
+            except Exception as exc:
+                detail_failed += 1
+                merged["detailFetchError"] = str(exc)
+        product = normalize_product(merged)
+        if merged.get("detailFetchError"):
+            product["detailFetchError"] = merged["detailFetchError"]
+        items.append(product)
     total = data.get("totalElements") or data.get("totalCount") or data.get("total")
-    return {"configured":True,"count":len(items),"totalElements":total if isinstance(total,int) else None,"items":items,"message":"상품 목록 조회 성공","updatedAt":datetime.now(timezone.utc).isoformat()}
+    return {
+        "configured":True,
+        "count":len(items),
+        "totalElements":total if isinstance(total,int) else None,
+        "detailFetched":detail_success,
+        "detailFailed":detail_failed,
+        "items":items,
+        "message":"상품 목록 및 상세정보 조회 완료" if detail_failed == 0 else "상품 목록 조회 완료 (일부 상세정보 조회 실패)",
+        "updatedAt":datetime.now(timezone.utc).isoformat()
+    }
 
 def get_ads():
     try:
