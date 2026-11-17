@@ -15,6 +15,23 @@ token_cache = {"token": None, "expires": 0}
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=8000)
 
+def llm_key():
+    return os.getenv("POSTECH_API_KEY") or os.getenv("OPENAI_API_KEY")
+
+def llm_model():
+    return os.getenv("POSTECH_MODEL") or os.getenv("OPENAI_MODEL", "")
+
+def llm_client():
+    from openai import OpenAI
+    key = llm_key()
+    if not key:
+        raise RuntimeError("POSTECH_API_KEY 또는 OPENAI_API_KEY가 설정되지 않았습니다.")
+    base_url = os.getenv("LLM_BASE_URL", "https://genai.postech.ac.kr/agent/openai_compatible/a1/v1").rstrip("/")
+    return OpenAI(api_key=key, base_url=base_url)
+
+def llm_configured():
+    return bool(llm_key() and llm_model())
+
 def commerce_configured():
     return all(os.getenv(k) for k in ("NAVER_COMMERCE_CLIENT_ID","NAVER_COMMERCE_CLIENT_SECRET","NAVER_COMMERCE_ACCOUNT_ID"))
 
@@ -104,7 +121,7 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"status":"ok","service":"ai-sales-agent","version":"0.2.1","timestamp":datetime.now(timezone.utc).isoformat(),"llm_configured":bool(os.getenv("OPENAI_API_KEY")),"commerce_configured":commerce_configured()}
+    return {"status":"ok","service":"ai-sales-agent","version":"0.2.1","timestamp":datetime.now(timezone.utc).isoformat(),"llm_configured":llm_configured(),"commerce_configured":commerce_configured()}
 
 @app.get("/data/products")
 def products(size:int=Query(default=20,ge=1,le=50)):
@@ -119,24 +136,26 @@ def overview():
 
 @app.post("/agent/chat")
 def chat(req:ChatRequest):
-    key = os.getenv("OPENAI_API_KEY")
-    if not key:
-        raise HTTPException(status_code=503,detail="OPENAI_API_KEY가 Render에 설정되지 않았습니다.")
+    key = llm_key()
+    model = llm_model()
+    if not key or not model:
+        raise HTTPException(status_code=503,detail="POSTECH_API_KEY와 POSTECH_MODEL을 Render에 설정해야 합니다.")
     try:
-        from openai import OpenAI
-        model = os.getenv("OPENAI_MODEL","gpt-4.1-mini")
         context = {"smartStoreProducts":None,"naverAds":get_ads(),"ordersAndSales":"미연결","research":None}
         try:
             context["smartStoreProducts"] = get_products(20)
         except Exception as exc:
             context["smartStoreProducts"] = {"error":str(exc)}
         prompt = "연결 데이터(YouTube API 미사용, 링크 기반 참고만 가능):\\n" + json.dumps(context,ensure_ascii=False,default=str) + "\\n\\n사용자 요청:\\n" + req.message
-        response = OpenAI(api_key=key).responses.create(
+        response = llm_client().chat.completions.create(
             model=model,
-            instructions="과메기 온라인 판매대행 마케팅 분석 보조자. YouTube Data API를 호출하지 않는다. 유튜브 참고가 필요하면 사용자가 제공한 링크 또는 YouTube 검색 결과 링크만 제안하고, 영상 제목·조회수·좋아요·댓글을 확인했다고 주장하지 않는다. 검색하지 않은 웹사이트나 시장 데이터를 검색했다고 주장하지 않는다. 수익성은 판매가에서 원물·손질·야채·포장·배송정산·플랫폼수수료·광고비를 차감한 공헌이익으로 평가. 확인되지 않은 비용은 가정으로 분리. 게시·가격·재고·광고예산·주문 등 외부 변경은 제안만 하며 실행했다고 주장하지 말 것.",
-            input=prompt
+            messages=[
+                {"role":"system","content":"과메기 온라인 판매대행 마케팅 분석 보조자. YouTube Data API를 호출하지 않는다. 유튜브 참고가 필요하면 사용자가 제공한 링크 또는 YouTube 검색 결과 링크만 제안하고, 영상 제목·조회수·좋아요·댓글을 확인했다고 주장하지 않는다. 검색하지 않은 웹사이트나 시장 데이터를 검색했다고 주장하지 않는다. 수익성은 판매가에서 원물·손질·야채·포장·배송정산·플랫폼수수료·광고비를 차감한 공헌이익으로 평가. 확인되지 않은 비용은 가정으로 분리. 게시·가격·재고·광고예산·주문 등 외부 변경은 제안만 하며 실행했다고 주장하지 말 것."},
+                {"role":"user","content":prompt}
+            ]
         )
-        return {"reply":response.output_text,"model":model}
+        answer = response.choices[0].message.content or ""
+        return {"reply":answer,"model":model}
     except HTTPException:
         raise
     except Exception as exc:
@@ -144,7 +163,7 @@ def chat(req:ChatRequest):
 
 @app.get("/agent/capabilities/legacy")
 def capabilities():
-    return {"chat":bool(os.getenv("OPENAI_API_KEY")),"read_only_data_connectors":{"naver_commerce_products":commerce_configured(),"naver_search_ads":True,"instagram_snapshot":True,"orders_and_sales":False},"task_approval":False,"external_execution":False}
+    return {"chat":llm_configured(),"read_only_data_connectors":{"naver_commerce_products":commerce_configured(),"naver_search_ads":True,"instagram_snapshot":True,"orders_and_sales":False},"task_approval":False,"external_execution":False}
 
 
 # --- Agent workflows: analysis first, approval before every external write ---
@@ -252,18 +271,21 @@ def pricing_analyze(req: PricingInput):
 
 @app.post("/agent/cs/draft")
 def cs_draft(req: CSDraftInput):
-    key = os.getenv("OPENAI_API_KEY")
-    if not key:
-        raise HTTPException(status_code=503, detail="OPENAI_API_KEY 미설정: 실제 AI 답변 생성은 비활성 상태입니다.")
+    key = llm_key()
+    model = llm_model()
+    if not key or not model:
+        raise HTTPException(status_code=503, detail="POSTECH_API_KEY와 POSTECH_MODEL을 Render에 설정해야 합니다.")
     try:
-        from openai import OpenAI
         prompt = {"channel":req.channel,"customer_message":req.customer_message,"verified_product_facts":req.product_facts,"approved_guides":req.approved_guides}
-        response = OpenAI(api_key=key).responses.create(
-          model=os.getenv("OPENAI_MODEL","gpt-4.1-mini"),
-          instructions="한국 온라인 식품 판매 CS 초안 작성자. 제공된 검증 사실과 승인된 가이드만 사용한다. 사실이 없으면 확인 필요라고 말한다. 환불·보상·식품안전·원산지 분쟁은 확답하지 말고 담당자 확인으로 분류한다. 메시지를 전송하지 말고 답변 초안과 위험 분류만 반환한다.",
-          input=json.dumps(prompt,ensure_ascii=False)
+        response = llm_client().chat.completions.create(
+          model=model,
+          messages=[
+            {"role":"system","content":"한국 온라인 식품 판매 CS 초안 작성자. 제공된 검증 사실과 승인된 가이드만 사용한다. 사실이 없으면 확인 필요라고 말한다. 환불·보상·식품안전·원산지 분쟁은 확답하지 말고 담당자 확인으로 분류한다. 메시지를 전송하지 말고 답변 초안과 위험 분류만 반환한다."},
+            {"role":"user","content":json.dumps(prompt,ensure_ascii=False)}
+          ]
         )
-        return {"agent":"cs","status":"draft_only","reply_draft":response.output_text,"send_allowed":False,"requires_human_review":True}
+        answer = response.choices[0].message.content or ""
+        return {"agent":"cs","status":"draft_only","reply_draft":answer,"model":model,"send_allowed":False,"requires_human_review":True}
     except Exception as exc:
         raise HTTPException(status_code=502,detail="CS 초안 생성 실패: "+type(exc).__name__)
 
