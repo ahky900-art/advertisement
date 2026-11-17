@@ -182,7 +182,7 @@ async function loadSmartStoreProducts(){
  const state=document.getElementById('smartStoreProductState'),updated=document.getElementById('smartStoreProductUpdated'),rows=document.getElementById('smartStoreProductRows'),settingsState=document.getElementById('smartStoreSettingsState'),settingsInfo=document.getElementById('smartStoreSettingsInfo');
  if(state)state.textContent='조회 중';if(rows)rows.innerHTML='<tr><td colspan="5">스마트스토어 상품정보 조회 중입니다.</td></tr>';
  try{
-  const r=await fetch(AGENT_API_BASE_URL+'/data/products?size=50',{headers:{'Accept':'application/json'},cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.detail||('HTTP '+r.status));
+  const r=await fetch(AGENT_API_BASE_URL+'/data/products?size=10',{headers:{'Accept':'application/json'},cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.detail||('HTTP '+r.status));
   if(!d.configured){if(state)state.textContent='인증정보 미설정';if(settingsState)settingsState.textContent='인증정보 미설정';if(settingsInfo)settingsInfo.textContent='Render 환경변수에 커머스 API ID·Secret·판매자 account_id 등록 필요';if(rows)rows.innerHTML='<tr><td colspan="5">네이버 커머스 API 인증정보가 Agent API 서버에 등록되지 않았습니다.</td></tr>';if(updated)updated.textContent='서버 응답 정상 · 상품 인증 대기';return;}
   const items=Array.isArray(d.items)?d.items:[];if(state)state.textContent='API 연결 정상 · '+(d.totalElements??items.length)+'개';if(settingsState)settingsState.textContent='상품 조회 정상';if(settingsInfo)settingsInfo.textContent='상품 API 응답 정상';if(updated)updated.textContent='최근 조회 '+new Date(d.updatedAt||Date.now()).toLocaleString('ko-KR')+' · 최대 10개 표시';
   window.SMARTSTORE_PRODUCTS=items;
