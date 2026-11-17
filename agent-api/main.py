@@ -271,7 +271,7 @@ def health():
     return {"status":"ok","service":"ai-sales-agent","version":"0.2.1","timestamp":datetime.now(timezone.utc).isoformat(),"llm_configured":llm_configured(),"commerce_configured":commerce_configured()}
 
 @app.get("/data/products")
-def products(size:int=Query(default=10,ge=1,le=10)):
+def products(size:int=Query(default=10,ge=1)):
     try:
         return get_products(size)
     except Exception as exc:
