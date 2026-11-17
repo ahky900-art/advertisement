@@ -158,12 +158,26 @@ def normalize_product(row):
     discounted_price = explicit_discounted_price or policy_discounted_price
     effective_price = discounted_price if discounted_price is not None and (sale_price is None or discounted_price < sale_price) else sale_price
     discount_rate = round((1 - effective_price / sale_price) * 100, 1) if sale_price and effective_price is not None and effective_price < sale_price else 0
+    product_name = str(channel.get("name") or channel.get("channelProductName") or origin.get("name") or row.get("name") or "상품명 미제공")
+    # 사용자가 지정한 과메기 전용 수기 기준값: 실제 판매가 30,000원, 할인 설정액 3,000원.
+    # 네이버 API 할인 필드가 누락되거나 다른 가격을 반환해도 과메기 상품에만 이 기준을 적용합니다.
+    is_guamegi = "과메기" in product_name
+    if is_guamegi:
+        sale_price = 30000
+        discounted_price = 30000
+        effective_price = 30000
+        discount_amount = 3000
+        discount_rate = 0
+    else:
+        discount_amount = None
+
     return {
         "channelProductNo": str(channel.get("channelProductNo") or row.get("channelProductNo") or ""),
         "originProductNo": str(row.get("originProductNo") or origin.get("originProductNo") or ""),
-        "name": str(channel.get("name") or channel.get("channelProductName") or origin.get("name") or row.get("name") or "상품명 미제공"),
+        "name": product_name,
         "salePrice": sale_price,
-        "discountedPrice": discounted_price if discounted_price is not None and (sale_price is None or discounted_price < sale_price) else None,
+        "discountedPrice": discounted_price,
+        "discountAmount": discount_amount,
         "effectivePrice": effective_price,
         "discountRate": discount_rate,
         "stockQuantity": int(stock) if isinstance(stock, (int, float)) else None,
@@ -229,14 +243,18 @@ def get_products(size=10):
                 detail_failed += 1
                 merged["detailFetchError"] = str(exc)
         product = normalize_product(merged)
+        # 대시보드에는 과메기 상품만 노출합니다.
+        if "과메기" not in product.get("name", ""):
+            continue
         if merged.get("detailFetchError"):
             product["detailFetchError"] = merged["detailFetchError"]
         items.append(product)
-    total = data.get("totalElements") or data.get("totalCount") or data.get("total")
+        if len(items) >= 10:
+            break
     return {
         "configured":True,
         "count":len(items),
-        "totalElements":total if isinstance(total,int) else None,
+        "totalElements":len(items),
         "detailFetched":detail_success,
         "detailFailed":detail_failed,
         "items":items,
