@@ -165,6 +165,21 @@ def get_ads():
 def root():
     return {"service":"AI Sales Agent API","docs":"/docs"}
 
+@app.get("/debug/egress-ip")
+def debug_egress_ip():
+    # Diagnostic only: reports the public IPv4 seen by an external IP-echo service.
+    try:
+        response = requests.get("https://api.ipify.org?format=json", timeout=10)
+        response.raise_for_status()
+        public_ip = response.json().get("ip")
+        return {
+            "public_ipv4": public_ip,
+            "render_outbound_cidrs": ["74.220.52.0/24", "74.220.60.0/24"],
+            "note": "This is the egress IP observed for this request; Render shared outbound IPs may vary."
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="외부 IP 확인 실패: " + type(exc).__name__) from exc
+
 @app.get("/health")
 def health():
     return {"status":"ok","service":"ai-sales-agent","version":"0.2.1","timestamp":datetime.now(timezone.utc).isoformat(),"llm_configured":llm_configured(),"commerce_configured":commerce_configured()}
