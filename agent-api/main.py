@@ -125,8 +125,15 @@ def normalize_product(row):
     sale_price = int(sale_price) if isinstance(sale_price, (int, float)) else None
     explicit_discounted_price = int(explicit_discounted_price) if isinstance(explicit_discounted_price, (int, float)) and explicit_discounted_price > 0 else None
 
+    # 네이버 원상품 응답 스키마상 기본 할인은 customerBenefit.immediateDiscountPolicy에 중첩됩니다.
+    origin_benefit = first_dict(origin.get("customerBenefit"))
+    channel_benefit = first_dict(channel.get("customerBenefit"))
+    row_benefit = first_dict(row.get("customerBenefit"))
     discount_policy = first_dict(
-        origin.get("immediateDiscountPolicy")
+        origin_benefit.get("immediateDiscountPolicy")
+        or channel_benefit.get("immediateDiscountPolicy")
+        or row_benefit.get("immediateDiscountPolicy")
+        or origin.get("immediateDiscountPolicy")
         or channel.get("immediateDiscountPolicy")
         or row.get("immediateDiscountPolicy")
     )
