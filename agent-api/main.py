@@ -21,13 +21,19 @@ def llm_key():
 def llm_model():
     return os.getenv("POSTECH_MODEL") or os.getenv("OPENAI_MODEL", "")
 
-def llm_client():
-    from openai import OpenAI
+def llm_chat_completion(model, messages):
     key = llm_key()
     if not key:
-        raise RuntimeError("POSTECH_API_KEY 또는 OPENAI_API_KEY가 설정되지 않았습니다.")
+        raise RuntimeError("POSTECH_API_KEY가 설정되지 않았습니다.")
     base_url = os.getenv("LLM_BASE_URL", "https://genai.postech.ac.kr/agent/openai_compatible/a1/v1").rstrip("/")
-    return OpenAI(api_key=key, base_url=base_url)
+    response = requests.post(
+        base_url + "/chat/completions",
+        headers={"x-api-key": key, "Content-Type": "application/json"},
+        json={"model": model, "messages": messages, "stream": False},
+        timeout=120
+    )
+    response.raise_for_status()
+    return response.json()
 
 def llm_configured():
     return bool(llm_key() and llm_model())
@@ -147,14 +153,14 @@ def chat(req:ChatRequest):
         except Exception as exc:
             context["smartStoreProducts"] = {"error":str(exc)}
         prompt = "연결 데이터(YouTube API 미사용, 링크 기반 참고만 가능):\\n" + json.dumps(context,ensure_ascii=False,default=str) + "\\n\\n사용자 요청:\\n" + req.message
-        response = llm_client().chat.completions.create(
-            model=model,
-            messages=[
+        response = llm_chat_completion(
+            model,
+            [
                 {"role":"system","content":"과메기 온라인 판매대행 마케팅 분석 보조자. YouTube Data API를 호출하지 않는다. 유튜브 참고가 필요하면 사용자가 제공한 링크 또는 YouTube 검색 결과 링크만 제안하고, 영상 제목·조회수·좋아요·댓글을 확인했다고 주장하지 않는다. 검색하지 않은 웹사이트나 시장 데이터를 검색했다고 주장하지 않는다. 수익성은 판매가에서 원물·손질·야채·포장·배송정산·플랫폼수수료·광고비를 차감한 공헌이익으로 평가. 확인되지 않은 비용은 가정으로 분리. 게시·가격·재고·광고예산·주문 등 외부 변경은 제안만 하며 실행했다고 주장하지 말 것."},
                 {"role":"user","content":prompt}
             ]
         )
-        answer = response.choices[0].message.content or ""
+        answer = ((response.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
         return {"reply":answer,"model":model}
     except HTTPException:
         raise
@@ -277,14 +283,14 @@ def cs_draft(req: CSDraftInput):
         raise HTTPException(status_code=503, detail="POSTECH_API_KEY와 POSTECH_MODEL을 Render에 설정해야 합니다.")
     try:
         prompt = {"channel":req.channel,"customer_message":req.customer_message,"verified_product_facts":req.product_facts,"approved_guides":req.approved_guides}
-        response = llm_client().chat.completions.create(
-          model=model,
-          messages=[
+        response = llm_chat_completion(
+            model,
+            [
             {"role":"system","content":"한국 온라인 식품 판매 CS 초안 작성자. 제공된 검증 사실과 승인된 가이드만 사용한다. 사실이 없으면 확인 필요라고 말한다. 환불·보상·식품안전·원산지 분쟁은 확답하지 말고 담당자 확인으로 분류한다. 메시지를 전송하지 말고 답변 초안과 위험 분류만 반환한다."},
             {"role":"user","content":json.dumps(prompt,ensure_ascii=False)}
           ]
         )
-        answer = response.choices[0].message.content or ""
+        answer = ((response.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
         return {"agent":"cs","status":"draft_only","reply_draft":answer,"model":model,"send_allowed":False,"requires_human_review":True}
     except Exception as exc:
         raise HTTPException(status_code=502,detail="CS 초안 생성 실패: "+type(exc).__name__)
