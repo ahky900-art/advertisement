@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 app = FastAPI(title="AI Sales Agent API", version="0.2.1")
-origins = [x.strip() for x in os.getenv("CORS_ORIGINS", "https://ahky900-art.github.io,http://localhost:8000").split(",") if x.strip()]
+origins = list(dict.fromkeys([x.strip() for x in os.getenv("CORS_ORIGINS", "").split(",") if x.strip()] + ["https://ahky900-art.github.io", "http://localhost:8000"]))
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=False, allow_methods=["GET","POST"], allow_headers=["Content-Type","Authorization"])
 COMMERCE = "https://api.commerce.naver.com/external"
 ADS = os.getenv("NAVER_ADS_API_BASE", "https://advertisement-naver-api-ymb4.onrender.com").rstrip("/")
