@@ -1,5 +1,7 @@
 import os, time, base64, json
 from datetime import datetime, timezone
+from uuid import UUID
+import psycopg
 import bcrypt, requests
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +16,8 @@ token_cache = {"token": None, "expires": 0}
 
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=8000)
+    client_id: UUID
+    conversation_id: UUID
 
 def llm_key():
     return os.getenv("POSTECH_API_KEY") or os.getenv("OPENAI_API_KEY")
@@ -37,6 +41,42 @@ def llm_chat_completion(model, messages):
 
 def llm_configured():
     return bool(llm_key() and llm_model())
+
+def history_connection():
+    dsn = os.getenv("DATABASE_URL")
+    if not dsn:
+        raise RuntimeError("DATABASE_URL_NOT_CONFIGURED")
+    return psycopg.connect(dsn, connect_timeout=8)
+
+def ensure_history_table(conn):
+    conn.execute("""
+      CREATE TABLE IF NOT EXISTS agent_chat_messages (
+        id BIGSERIAL PRIMARY KEY,
+        client_id UUID NOT NULL,
+        conversation_id UUID NOT NULL,
+        role TEXT NOT NULL CHECK (role IN ('user','assistant')),
+        content TEXT NOT NULL,
+        model TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    """)
+    conn.execute("""
+      CREATE INDEX IF NOT EXISTS idx_agent_chat_owner_updated
+      ON agent_chat_messages (client_id, conversation_id, created_at DESC)
+    """)
+
+def save_chat_turn(client_id, conversation_id, message, answer, model):
+    with history_connection() as conn:
+        ensure_history_table(conn)
+        conn.execute(
+          "INSERT INTO agent_chat_messages (client_id,conversation_id,role,content,model) VALUES (%s,%s,'user',%s,%s)",
+          (client_id,conversation_id,message,model)
+        )
+        conn.execute(
+          "INSERT INTO agent_chat_messages (client_id,conversation_id,role,content,model) VALUES (%s,%s,'assistant',%s,%s)",
+          (client_id,conversation_id,answer,model)
+        )
+
 
 def commerce_configured():
     return all(os.getenv(k) for k in ("NAVER_COMMERCE_CLIENT_ID","NAVER_COMMERCE_CLIENT_SECRET","NAVER_COMMERCE_ACCOUNT_ID"))
@@ -161,7 +201,13 @@ def chat(req:ChatRequest):
             ]
         )
         answer = ((response.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
-        return {"reply":answer,"model":model}
+        history_saved = False
+        try:
+            save_chat_turn(req.client_id, req.conversation_id, req.message, answer, model)
+            history_saved = True
+        except Exception:
+            history_saved = False
+        return {"reply":answer,"model":model,"conversation_id":str(req.conversation_id),"history_saved":history_saved}
     except HTTPException:
         raise
     except Exception as exc:
@@ -420,14 +466,66 @@ def youtube_public_video(video_id: str):
     except Exception as exc:
         raise HTTPException(status_code=502, detail="YouTube 공개 데이터 조회 실패: "+type(exc).__name__)
 
+
+@app.get("/agent/history")
+def list_chat_history(client_id: UUID, limit: int = Query(default=30, ge=1, le=100)):
+    try:
+        with history_connection() as conn:
+            ensure_history_table(conn)
+            rows = conn.execute("""
+              SELECT conversation_id::text,
+                     MIN(created_at)::text AS created_at,
+                     MAX(created_at)::text AS updated_at,
+                     COUNT(*) AS message_count,
+                     (SELECT LEFT(m2.content,100)
+                        FROM agent_chat_messages m2
+                       WHERE m2.client_id = m.client_id
+                         AND m2.conversation_id = m.conversation_id
+                         AND m2.role = 'user'
+                       ORDER BY m2.id ASC LIMIT 1) AS title
+                FROM agent_chat_messages m
+               WHERE client_id = %s
+               GROUP BY client_id, conversation_id
+               ORDER BY MAX(created_at) DESC
+               LIMIT %s
+            """, (client_id,limit)).fetchall()
+        return {"items":[{"conversation_id":r[0],"created_at":r[1],"updated_at":r[2],"message_count":r[3],"title":r[4] or "새 대화"} for r in rows],"persistent":True}
+    except RuntimeError as exc:
+        if str(exc) == "DATABASE_URL_NOT_CONFIGURED":
+            raise HTTPException(status_code=503, detail="대화 이력용 PostgreSQL이 아직 연결되지 않았습니다.")
+        raise HTTPException(status_code=503, detail="대화 이력을 불러오지 못했습니다.")
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="대화 이력을 불러오지 못했습니다: "+type(exc).__name__)
+
+@app.get("/agent/history/{conversation_id}")
+def get_chat_history(conversation_id: UUID, client_id: UUID):
+    try:
+        with history_connection() as conn:
+            ensure_history_table(conn)
+            rows = conn.execute("""
+              SELECT role,content,model,created_at::text
+                FROM agent_chat_messages
+               WHERE client_id=%s AND conversation_id=%s
+               ORDER BY id ASC
+            """, (client_id,conversation_id)).fetchall()
+        return {"conversation_id":str(conversation_id),"items":[{"role":r[0],"content":r[1],"model":r[2],"created_at":r[3]} for r in rows],"persistent":True}
+    except RuntimeError as exc:
+        if str(exc) == "DATABASE_URL_NOT_CONFIGURED":
+            raise HTTPException(status_code=503, detail="대화 이력용 PostgreSQL이 아직 연결되지 않았습니다.")
+        raise HTTPException(status_code=503, detail="대화 내용을 불러오지 못했습니다.")
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="대화 내용을 불러오지 못했습니다: "+type(exc).__name__)
+
 @app.get("/agent/capabilities")
 def capabilities_v2():
     return {
-      "chat":bool(os.getenv("OPENAI_API_KEY")),
+      "chat":llm_configured(),
+      "chat_history":bool(os.getenv("DATABASE_URL")),
       "sourcing_analysis":True,"pricing_calculation":True,"cs_draft":bool(os.getenv("OPENAI_API_KEY")),
       "youtube_public_data":False,
       "approval_queue":True,
       "external_execution":False,
       "connected_channels":{"naver_smartstore_products":commerce_configured(),"naver_ads":True,"instagram_live_api":False},
-      "limitations":["승인 기능은 승인 이력만 기록하며 외부 변경은 실행하지 않습니다.","승인 DB는 AGENT_DB_PATH 기본값(/tmp)의 임시 저장입니다. 영구 보존에는 PostgreSQL 연결이 필요합니다.","Instagram은 현재 라이브 API가 아닌 기존 대시보드 스냅샷만 확인 가능합니다."]
+      "limitations":["승인 기능은 승인 이력만 기록하며 외부 변경은 실행하지 않습니다.","대화 이력은 DATABASE_URL에 연결된 PostgreSQL에 저장됩니다. 브라우저별 client_id로 구분되며 다른 기기와 공유하려면 별도 로그인 기능이 필요합니다.",
+      "승인 DB는 AGENT_DB_PATH 기본값(/tmp)의 임시 저장입니다. 영구 보존에는 별도 PostgreSQL 전환이 필요합니다.","Instagram은 현재 라이브 API가 아닌 기존 대시보드 스냅샷만 확인 가능합니다."]
     }
