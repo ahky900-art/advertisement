@@ -86,7 +86,7 @@
 <div class="content-tile"><b>④ 손질 인건비 — 판매자 제공 잠정값</b><p>머리·꼬리·내장 등 손질 인건비 2,000원. 적용 단위(1~2두룹 작업인지, 10미 세트인지, 박스당인지)가 확정되지 않아 20미에 2배 적용하지 않았습니다. 원가표에는 잠정 입력값으로만 표시합니다.</p></div>
 <div class="content-tile"><b>⑤ 야채·소스·김 — 타사 구성·가격을 이용한 참고치</b><p>SSG 동일 상품 페이지의 손질 과메기 단품과 야채세트 가격 차이는 10미: 28,900원 − 16,900원 = 12,000원, 20미: 48,900원 − 30,900원 = 18,000원입니다. 이 차액은 야채·초장·김 등 세트 구성의 소비자 판매가격상 추가분(포장·판매마진 포함 가능)이지 실제 매입원가가 아닙니다. BOM에서는 시장 참고금액으로 별도 표기하고 실제 채소·해초·김·초장 매입원가와 혼용하지 않습니다. 공개된 세트 구성 사례에는 알배추·쌈배추·쪽파·마늘·고추·꼬시래기·다시마·김·초장 등이 포함됩니다.</p></div>
 <div class="content-tile"><b>⑥ 포장·배송</b><p>고객 부담 택배비는 10미·20미 모두 3,000원. 실제 택배사 정산 운임, 보냉박스, 아이스팩, 진공포장재, 트레이, 흡수패드, 외부박스는 별도입니다. 고객 배송비 수입과 실제 배송원가의 차액을 물류 손익으로 관리해야 합니다.</p></div>
-<div class="notice"><b>수율 기반 핵심 결과</b><br>9kg 원물 → 할복 5.4kg → 반건조 2.4kg → 최종 손질 1.8kg. 전체 수율 20.0%.<br>귀사 판매가: 10미 29,500원 + 배송 3,000원 / 20미 45,900원 + 배송 3,000원.<br>Tridge 원물 가격은 2025년 과거 거래 참고치, 야채세트 금액은 타사 소매가 차액 참고치입니다. 어느 쪽도 현재 3번고기의 확정 매입원가로 간주하지 않습니다.</div></div></div>
+<div class="notice"><b>수율 기반 핵심 결과</b><br>9kg 원물 → 할복 5.4kg → 반건조 2.4kg → 최종 손질 1.8kg. 전체 수율 20.0%.<br>귀사 실제 적용 가격: 10미 <span id="productNoticePrice10">조회 중</span> + 배송 3,000원 / 20미 <span id="productNoticePrice20">조회 중</span> + 배송 3,000원.<br>Tridge 원물 가격은 2025년 과거 거래 참고치, 야채세트 금액은 타사 소매가 차액 참고치입니다. 어느 쪽도 현재 3번고기의 확정 매입원가로 간주하지 않습니다.</div></div></div>
 </section>
 <section class="page" id="references"><div class="page-title"><div><h1>참조사항</h1><div class="sub">과메기 원가 계산식, BOM 산정 기준 및 외부 참고자료</div></div><span class="demo">참고 금액 · 추정 기준</span></div>
 <div class="card" style="margin-top:12px"><h2>원가 계산식 및 입력 기준</h2><p><b>최종 손질 과메기 원물비/kg</b> = 원물 박스 매입가 ÷ 최종 손질 후 중량(kg). 현재 수율 가정은 9kg 박스 → 1.8kg(20.0%).</p><p><b>주문당 총 변동원가</b> = 최종 손질 과메기 원물비 + 손질 인건비 + 야채·소스·김 + 포장재 + 실제 택배 정산액 + 플랫폼·결제 수수료 + 광고비 + 반품·폐기비.</p><p><b>주문당 총 변동원가</b> = 과메기 원가 + 야채·소스 + 포장재 + 택배비 + 플랫폼·결제 수수료 + 주문별 광고비 + 예상 반품·폐기비</p><p class="sub">고정비(설비 감가상각·임차료·관리인건비)는 월 생산량 또는 주문량으로 배부해야 합니다. 공급처 견적과 실제 작업 수율을 받기 전에는 원가 비중이나 원 단위 금액을 확정하지 않습니다.</p></div>
@@ -141,7 +141,7 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 
 const AGENT_API_BASE_URL='https://guamegi-ai-sales-agent-api.onrender.com';
 function updateProductAnalysisPrices(items){
- const p10=document.getElementById('productPrice10'),p20=document.getElementById('productPrice20'),t10=document.getElementById('productTotal10'),t20=document.getElementById('productTotal20'),note=document.getElementById('productPriceSyncNote');
+ const p10=document.getElementById('productPrice10'),p20=document.getElementById('productPrice20'),t10=document.getElementById('productTotal10'),t20=document.getElementById('productTotal20'),n10=document.getElementById('productNoticePrice10'),n20=document.getElementById('productNoticePrice20'),note=document.getElementById('productPriceSyncNote');
  const fmt=x=>x==null?'—':Number(x).toLocaleString('ko-KR')+'원';
  const find=(re)=>items.find(x=>re.test(String(x.name||'')));
  const ten=find(/10\s*미|10\s*마리|20\s*쪽/i);
@@ -151,6 +151,8 @@ function updateProductAnalysisPrices(items){
  if(p20)p20.textContent=fmt(price20);
  if(t10)t10.textContent=price10==null?'—':fmt(price10+3000);
  if(t20)t20.textContent=price20==null?'—':fmt(price20+3000);
+ if(n10)n10.textContent=fmt(price10);
+ if(n20)n20.textContent=fmt(price20);
  if(note)note.textContent='네이버 API 기준 · '+items.length+'개 조회 · 할인 적용 가격 우선';
 }
 async function loadYouTubeShorts(){
