@@ -118,12 +118,37 @@ def normalize_product(row):
     channel = first_dict(row.get("smartstoreChannelProduct") or row.get("channelProducts") or row.get("channelProduct") or row.get("channelProductInfo"))
     images = first_dict(origin.get("images") or row.get("images"))
     representative = first_dict(images.get("representativeImage") or images.get("representative"))
-    # 상품 검색 API의 판매가·할인가는 채널 상품(channelProducts)에 포함됩니다.
+    # 네이버 판매자 기본 할인은 originProduct.immediateDiscountPolicy.discountMethod에 저장됩니다.
     sale_price = channel.get("salePrice", origin.get("salePrice", row.get("salePrice")))
-    discounted_price = channel.get("discountedPrice", row.get("discountedPrice"))
+    explicit_discounted_price = channel.get("discountedPrice", row.get("discountedPrice"))
     stock = channel.get("stockQuantity", origin.get("stockQuantity", row.get("stockQuantity")))
     sale_price = int(sale_price) if isinstance(sale_price, (int, float)) else None
-    discounted_price = int(discounted_price) if isinstance(discounted_price, (int, float)) and discounted_price > 0 else None
+    explicit_discounted_price = int(explicit_discounted_price) if isinstance(explicit_discounted_price, (int, float)) and explicit_discounted_price > 0 else None
+
+    discount_policy = first_dict(
+        origin.get("immediateDiscountPolicy")
+        or channel.get("immediateDiscountPolicy")
+        or row.get("immediateDiscountPolicy")
+    )
+    discount_method = first_dict(
+        discount_policy.get("discountMethod")
+        or discount_policy.get("mobileDiscountMethod")
+    )
+    discount_value = discount_method.get("value")
+    discount_unit = str(discount_method.get("unitType") or "").upper()
+    policy_discounted_price = None
+    if sale_price is not None and isinstance(discount_value, (int, float)) and discount_value > 0:
+        if discount_unit == "WON":
+            discount_amount = int(discount_value)
+        elif discount_unit == "PERCENT":
+            discount_amount = round(sale_price * float(discount_value) / 100)
+        else:
+            discount_amount = 0
+        if 0 < discount_amount < sale_price:
+            policy_discounted_price = sale_price - discount_amount
+
+    # 응답에 계산된 할인가가 있으면 우선 사용하고, 없으면 할인 정책으로 계산합니다.
+    discounted_price = explicit_discounted_price or policy_discounted_price
     effective_price = discounted_price if discounted_price is not None and (sale_price is None or discounted_price < sale_price) else sale_price
     discount_rate = round((1 - effective_price / sale_price) * 100, 1) if sale_price and effective_price is not None and effective_price < sale_price else 0
     return {
@@ -155,9 +180,10 @@ def get_origin_product_detail(token, origin_product_no):
         raise RuntimeError(f"원상품 상세 조회 HTTP {response.status_code}: {detail}")
     return response.json()
 
-def get_products(size=20):
+def get_products(size=10):
     if not commerce_configured():
         return {"configured":False,"count":0,"totalElements":None,"items":[],"message":"커머스 API 인증정보 미설정","updatedAt":datetime.now(timezone.utc).isoformat()}
+    size = max(1, min(int(size), 10))
     token = commerce_token()
     r = requests.post(COMMERCE+"/v1/products/search", json={"page":1,"size":size},
         headers={"Authorization":"Bearer "+token,"Content-Type":"application/json","Accept":"application/json;charset=UTF-8"}, timeout=30)
@@ -245,7 +271,7 @@ def health():
     return {"status":"ok","service":"ai-sales-agent","version":"0.2.1","timestamp":datetime.now(timezone.utc).isoformat(),"llm_configured":llm_configured(),"commerce_configured":commerce_configured()}
 
 @app.get("/data/products")
-def products(size:int=Query(default=20,ge=1,le=50)):
+def products(size:int=Query(default=10,ge=1,le=10)):
     try:
         return get_products(size)
     except Exception as exc:
@@ -264,7 +290,7 @@ def chat(req:ChatRequest):
     try:
         context = {"smartStoreProducts":None,"naverAds":get_ads(),"ordersAndSales":"미연결","research":None}
         try:
-            context["smartStoreProducts"] = get_products(20)
+            context["smartStoreProducts"] = get_products(10)
         except Exception as exc:
             context["smartStoreProducts"] = {"error":str(exc)}
         prompt = "연결 데이터(YouTube API 미사용, 링크 기반 참고만 가능):\\n" + json.dumps(context,ensure_ascii=False,default=str) + "\\n\\n사용자 요청:\\n" + req.message
