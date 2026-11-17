@@ -79,22 +79,21 @@ def save_chat_turn(client_id, conversation_id, message, answer, model):
 
 
 def commerce_configured():
-    # 상품/주문 등 판매자 데이터 조회에는 SELLER 토큰과 판매자 account_id가 필요합니다.
-    return all(os.getenv(k) for k in ("NAVER_COMMERCE_CLIENT_ID","NAVER_COMMERCE_CLIENT_SECRET","NAVER_COMMERCE_ACCOUNT_ID"))
+    # 내스토어 애플리케이션은 SELF 인증을 사용하며 account_id가 필요하지 않습니다.
+    return bool(os.getenv("NAVER_COMMERCE_CLIENT_ID") and os.getenv("NAVER_COMMERCE_CLIENT_SECRET"))
 
 def commerce_token():
     if not commerce_configured():
-        raise RuntimeError("내 스토어 상품 데이터 조회에는 NAVER_COMMERCE_CLIENT_ID, NAVER_COMMERCE_CLIENT_SECRET, NAVER_COMMERCE_ACCOUNT_ID가 필요합니다. ACCOUNT_ID에는 네이버 커머스 API의 판매자 ID 또는 UID를 입력하세요.")
+        raise RuntimeError("Render에 NAVER_COMMERCE_CLIENT_ID와 NAVER_COMMERCE_CLIENT_SECRET를 등록해야 합니다.")
     if token_cache["token"] and token_cache["expires"] > time.time()+90:
         return token_cache["token"]
     client_id = os.environ["NAVER_COMMERCE_CLIENT_ID"].strip()
     secret = os.environ["NAVER_COMMERCE_CLIENT_SECRET"].strip()
-    account_id = os.environ["NAVER_COMMERCE_ACCOUNT_ID"].strip()
     timestamp = str(int(time.time()*1000))
     signature = base64.b64encode(bcrypt.hashpw(f"{client_id}_{timestamp}".encode(), secret.encode())).decode()
     r = requests.post(COMMERCE+"/v1/oauth2/token", data={
         "client_id":client_id, "timestamp":timestamp, "client_secret_sign":signature,
-        "grant_type":"client_credentials", "type":"SELLER", "account_id":account_id
+        "grant_type":"client_credentials", "type":"SELF"
     }, headers={"Content-Type":"application/x-www-form-urlencoded","Accept":"application/json"}, timeout=25)
     if not r.ok:
         try:
