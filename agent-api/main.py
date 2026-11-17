@@ -79,21 +79,21 @@ def save_chat_turn(client_id, conversation_id, message, answer, model):
 
 
 def commerce_configured():
-    return all(os.getenv(k) for k in ("NAVER_COMMERCE_CLIENT_ID","NAVER_COMMERCE_CLIENT_SECRET","NAVER_COMMERCE_ACCOUNT_ID"))
+    # "내 스토어 애플리케이션"은 SELF 인증만 사용하며 account_id가 필요하지 않습니다.
+    return bool(os.getenv("NAVER_COMMERCE_CLIENT_ID") and os.getenv("NAVER_COMMERCE_CLIENT_SECRET"))
 
 def commerce_token():
     if not commerce_configured():
-        raise RuntimeError("Render에 NAVER_COMMERCE_CLIENT_ID, NAVER_COMMERCE_CLIENT_SECRET, NAVER_COMMERCE_ACCOUNT_ID를 등록해야 합니다.")
+        raise RuntimeError("Render에 NAVER_COMMERCE_CLIENT_ID와 NAVER_COMMERCE_CLIENT_SECRET를 등록해야 합니다.")
     if token_cache["token"] and token_cache["expires"] > time.time()+90:
         return token_cache["token"]
     client_id = os.environ["NAVER_COMMERCE_CLIENT_ID"].strip()
     secret = os.environ["NAVER_COMMERCE_CLIENT_SECRET"].strip()
-    account_id = os.environ["NAVER_COMMERCE_ACCOUNT_ID"].strip()
     timestamp = str(int(time.time()*1000))
     signature = base64.b64encode(bcrypt.hashpw(f"{client_id}_{timestamp}".encode(), secret.encode())).decode()
     r = requests.post(COMMERCE+"/v1/oauth2/token", data={
         "client_id":client_id, "timestamp":timestamp, "client_secret_sign":signature,
-        "grant_type":"client_credentials", "type":"SELLER", "account_id":account_id
+        "grant_type":"client_credentials", "type":"SELF"
     }, headers={"Content-Type":"application/x-www-form-urlencoded","Accept":"application/json"}, timeout=25)
     if not r.ok:
         try:
