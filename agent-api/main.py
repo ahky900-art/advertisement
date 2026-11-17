@@ -118,15 +118,24 @@ def normalize_product(row):
     channel = first_dict(row.get("smartstoreChannelProduct") or row.get("channelProducts") or row.get("channelProduct") or row.get("channelProductInfo"))
     images = first_dict(origin.get("images") or row.get("images"))
     representative = first_dict(images.get("representativeImage") or images.get("representative"))
-    price = origin.get("salePrice", row.get("salePrice"))
-    stock = origin.get("stockQuantity", row.get("stockQuantity"))
+    # 상품 검색 API의 판매가·할인가는 채널 상품(channelProducts)에 포함됩니다.
+    sale_price = channel.get("salePrice", origin.get("salePrice", row.get("salePrice")))
+    discounted_price = channel.get("discountedPrice", row.get("discountedPrice"))
+    stock = channel.get("stockQuantity", origin.get("stockQuantity", row.get("stockQuantity")))
+    sale_price = int(sale_price) if isinstance(sale_price, (int, float)) else None
+    discounted_price = int(discounted_price) if isinstance(discounted_price, (int, float)) and discounted_price > 0 else None
+    effective_price = discounted_price if discounted_price is not None and (sale_price is None or discounted_price < sale_price) else sale_price
+    discount_rate = round((1 - effective_price / sale_price) * 100, 1) if sale_price and effective_price is not None and effective_price < sale_price else 0
     return {
         "channelProductNo": str(channel.get("channelProductNo") or row.get("channelProductNo") or ""),
         "originProductNo": str(row.get("originProductNo") or origin.get("originProductNo") or ""),
-        "name": str(channel.get("channelProductName") or origin.get("name") or row.get("name") or "상품명 미제공"),
-        "salePrice": int(price) if isinstance(price, (int, float)) else None,
+        "name": str(channel.get("name") or channel.get("channelProductName") or origin.get("name") or row.get("name") or "상품명 미제공"),
+        "salePrice": sale_price,
+        "discountedPrice": discounted_price if discounted_price is not None and (sale_price is None or discounted_price < sale_price) else None,
+        "effectivePrice": effective_price,
+        "discountRate": discount_rate,
         "stockQuantity": int(stock) if isinstance(stock, (int, float)) else None,
-        "status": str(channel.get("channelProductDisplayStatusType") or channel.get("channelProductStatusType") or origin.get("statusType") or row.get("statusType") or "상태 미제공"),
+        "status": str(channel.get("channelProductDisplayStatusType") or channel.get("statusType") or channel.get("channelProductStatusType") or origin.get("statusType") or row.get("statusType") or "상태 미제공"),
         "imageUrl": representative.get("url") if isinstance(representative.get("url"), str) and representative["url"].startswith("https://") else None
     }
 
