@@ -1214,7 +1214,7 @@ def capabilities_v2():
       "chat":llm_configured(),
       "chat_history":bool(os.getenv("DATABASE_URL")),
       "sourcing_analysis":True,"pricing_calculation":True,"cs_draft":bool(os.getenv("OPENAI_API_KEY")),
-      "youtube_public_data":False,
+      "youtube_public_data":bool(os.getenv("YOUTUBE_API_KEY")),
       "approval_queue":True,
       "external_execution":False,
       "connected_channels":{"naver_smartstore_products":commerce_configured(),"domeggook_supply_products":domeggook_configured(),"naver_ads":True,"instagram_live_api":False},
