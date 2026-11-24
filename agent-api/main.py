@@ -14,6 +14,8 @@ token_cache = {"token": None, "expires": 0}
 
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=8000)
+    client_id: str = Field(min_length=1, max_length=200)
+    conversation_id: str = Field(min_length=1, max_length=200)
     provider: str = Field(default="openai", pattern="^(openai|gemini)$")
 
 def commerce_configured():
@@ -126,12 +128,12 @@ def chat(req:ChatRequest):
             context["smartStoreProducts"] = get_products(20)
         except Exception as exc:
             context["smartStoreProducts"] = {"error":str(exc)}
-        prompt = "연결 데이터:\\n" + json.dumps(context,ensure_ascii=False,default=str) + "\\n\\n사용자 요청:\\n" + req.message
+        prompt = "연결 데이터:\n" + json.dumps(context,ensure_ascii=False,default=str) + "\n\n사용자 요청:\n" + req.message
         instructions = "과메기 온라인 판매대행 분석 보조자. 제공된 실제 조회 데이터만 사실로 사용하고 조회 실패·미연결은 수치 추정하지 말 것. 수익성은 판매가에서 원물·손질·야채·포장·배송정산·플랫폼수수료·광고비를 차감한 공헌이익으로 평가. 확인되지 않은 비용은 가정으로 분리. 게시·가격·재고·광고예산·주문 등 외부 변경은 제안만 하며 실행했다고 주장하지 말 것."
         if req.provider == "gemini":
-            key = os.getenv("GEMINI_CHAT_API_KEY")
+            key = os.getenv("GEMINI_CHAT_API_KEY") or os.getenv("GEMINI_API_KEY")
             if not key:
-                raise HTTPException(status_code=503,detail="GEMINI_CHAT_API_KEY가 Render에 설정되지 않았습니다. 기존 이미지 생성용 GEMINI_API_KEY와 별도로 등록하세요.")
+                raise HTTPException(status_code=503,detail="Render에 GEMINI_CHAT_API_KEY 또는 GEMINI_API_KEY를 등록하세요.")
             from google import genai
             model = os.getenv("GEMINI_CHAT_MODEL","gemini-3.8-flash")
             client = genai.Client(api_key=key)
@@ -158,4 +160,4 @@ def chat(req:ChatRequest):
 
 @app.get("/agent/capabilities")
 def capabilities():
-    return {"chat":bool(os.getenv("OPENAI_API_KEY") or os.getenv("GEMINI_CHAT_API_KEY")),"providers":{"openai":bool(os.getenv("OPENAI_API_KEY")),"gemini":bool(os.getenv("GEMINI_CHAT_API_KEY"))},"read_only_data_connectors":{"naver_commerce_products":commerce_configured(),"naver_search_ads":True,"instagram_snapshot":True,"orders_and_sales":False},"task_approval":False,"external_execution":False}
+    return {"chat":bool(os.getenv("OPENAI_API_KEY") or os.getenv("GEMINI_CHAT_API_KEY") or os.getenv("GEMINI_API_KEY")),"providers":{"openai":bool(os.getenv("OPENAI_API_KEY")),"gemini":bool(os.getenv("GEMINI_CHAT_API_KEY") or os.getenv("GEMINI_API_KEY"))},"read_only_data_connectors":{"naver_commerce_products":commerce_configured(),"naver_search_ads":True,"instagram_snapshot":True,"orders_and_sales":False},"task_approval":False,"external_execution":False}
