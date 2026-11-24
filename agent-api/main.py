@@ -1074,13 +1074,46 @@ def reject_approval(approval_id: str):
         raise HTTPException(status_code=404,detail="대기 중인 승인 건을 찾을 수 없습니다.")
     return {"approval_id":approval_id,"status":"rejected","execution_performed":False}
 
-def youtube_search_public(query: str, max_results: int = 8):
+def save_youtube_snapshot(video):
+    """Persist one observation; search remains usable if PostgreSQL is unavailable."""
+    try:
+        with history_connection() as conn:
+            conn.execute("""
+              CREATE TABLE IF NOT EXISTS youtube_view_snapshots (
+                id BIGSERIAL PRIMARY KEY,
+                video_id TEXT NOT NULL,
+                title TEXT,
+                channel_title TEXT,
+                view_count BIGINT,
+                like_count BIGINT,
+                comment_count BIGINT,
+                captured_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+              )
+            """)
+            conn.execute("""
+              CREATE INDEX IF NOT EXISTS idx_youtube_snapshots_video_time
+              ON youtube_view_snapshots (video_id, captured_at DESC)
+            """)
+            conn.execute("""
+              INSERT INTO youtube_view_snapshots
+                (video_id,title,channel_title,view_count,like_count,comment_count)
+              VALUES (%s,%s,%s,%s,%s,%s)
+            """, (video.get("video_id"),video.get("title"),video.get("channel_title"),
+                  video.get("view_count"),video.get("like_count"),video.get("comment_count")))
+        return True
+    except Exception:
+        return False
+
+
+def youtube_search_public(query: str, max_results: int = 8, order: str = "viewCount"):
     api_key = os.getenv("YOUTUBE_API_KEY")
     if not api_key:
         raise HTTPException(status_code=503, detail="유튜브 검색을 사용하려면 Render 환경변수 YOUTUBE_API_KEY를 먼저 등록해야 합니다.")
+    if order not in ("viewCount", "date", "relevance"):
+        order = "viewCount"
     search_response = requests.get("https://www.googleapis.com/youtube/v3/search", params={
         "part":"snippet", "type":"video", "q":query,
-        "maxResults":max(1,min(max_results,10)), "order":"relevance",
+        "maxResults":max(1,min(max_results,10)), "order":order,
         "regionCode":"KR", "relevanceLanguage":"ko", "key":api_key
     }, timeout=20)
     search_data = search_response.json()
@@ -1089,7 +1122,7 @@ def youtube_search_public(query: str, max_results: int = 8):
         raise HTTPException(status_code=502, detail="YouTube 검색 실패: "+reason)
     ids = [x.get("id",{}).get("videoId") for x in search_data.get("items",[]) if x.get("id",{}).get("videoId")]
     if not ids:
-        return {"query":query,"items":[],"source":"YouTube Data API v3","searched_at":datetime.now(timezone.utc).isoformat()}
+        return {"query":query,"items":[],"source":"YouTube Data API v3","searched_at":datetime.now(timezone.utc).isoformat(),"history_saved":False}
     stats_response = requests.get("https://www.googleapis.com/youtube/v3/videos", params={
         "part":"snippet,statistics,contentDetails", "id":",".join(ids), "key":api_key
     }, timeout=20)
@@ -1106,11 +1139,52 @@ def youtube_search_public(query: str, max_results: int = 8):
             "comment_count":int(st["commentCount"]) if "commentCount" in st else None,
             "duration":item.get("contentDetails",{}).get("duration"),
             "url":"https://www.youtube.com/watch?v="+vid})
-    return {"query":query,"items":items,"source":"YouTube Data API v3","searched_at":datetime.now(timezone.utc).isoformat()}
+    saved = sum(1 for item in items if save_youtube_snapshot(item))
+    return {"query":query,"order":order,"items":items,"source":"YouTube Data API v3",
+            "searched_at":datetime.now(timezone.utc).isoformat(),"history_saved":saved>0,
+            "history_saved_count":saved}
+
 
 @app.get("/youtube/search")
-def youtube_search_endpoint(q: str = Query(min_length=1,max_length=200), max_results: int = Query(default=8,ge=1,le=10)):
-    return youtube_search_public(q,max_results)
+def youtube_search_endpoint(q: str = Query(min_length=1,max_length=200),
+                            max_results: int = Query(default=8,ge=1,le=10),
+                            order: str = Query(default="viewCount")):
+    return youtube_search_public(q,max_results,order)
+
+
+@app.get("/youtube/history/{video_id}")
+def youtube_view_history(video_id: str, limit: int = Query(default=100,ge=2,le=500)):
+    import re
+    if not re.fullmatch(r"[A-Za-z0-9_-]{11}", video_id):
+        raise HTTPException(status_code=400, detail="유효하지 않은 YouTube 영상 ID입니다.")
+    try:
+        with history_connection() as conn:
+            conn.execute("""
+              CREATE TABLE IF NOT EXISTS youtube_view_snapshots (
+                id BIGSERIAL PRIMARY KEY, video_id TEXT NOT NULL, title TEXT,
+                channel_title TEXT, view_count BIGINT, like_count BIGINT,
+                comment_count BIGINT, captured_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+              )
+            """)
+            conn.execute("""
+              CREATE INDEX IF NOT EXISTS idx_youtube_snapshots_video_time
+              ON youtube_view_snapshots (video_id, captured_at DESC)
+            """)
+            rows = conn.execute("""
+              SELECT title,channel_title,view_count,like_count,comment_count,captured_at
+              FROM youtube_view_snapshots WHERE video_id=%s
+              ORDER BY captured_at ASC LIMIT %s
+            """,(video_id,limit)).fetchall()
+        snapshots=[{"title":r[0],"channel_title":r[1],"view_count":r[2],
+                    "like_count":r[3],"comment_count":r[4],"captured_at":r[5].isoformat()}
+                   for r in rows]
+        delta = (snapshots[-1]["view_count"]-snapshots[0]["view_count"]
+                 if len(snapshots)>1 and snapshots[0]["view_count"] is not None
+                 and snapshots[-1]["view_count"] is not None else None)
+        return {"video_id":video_id,"count":len(snapshots),"snapshots":snapshots,
+                "view_change":delta,"tracked_since":snapshots[0]["captured_at"] if snapshots else None}
+    except Exception as exc:
+        raise HTTPException(status_code=503,detail="조회수 이력 저장소에 접근할 수 없습니다: "+type(exc).__name__)
 
 @app.get("/youtube/video/{video_id}")
 def youtube_public_video(video_id: str):
@@ -1136,7 +1210,7 @@ def youtube_public_video(video_id: str):
         item = items[0]
         snippet = item.get("snippet", {})
         stats = item.get("statistics", {})
-        return {
+        result = {
             "video_id":video_id,
             "url":"https://www.youtube.com/watch?v="+video_id,
             "title":snippet.get("title"),
@@ -1153,6 +1227,8 @@ def youtube_public_video(video_id: str):
             "source":"YouTube Data API v3",
             "updated_at":datetime.now(timezone.utc).isoformat()
         }
+        result["history_saved"] = save_youtube_snapshot(result)
+        return result
     except HTTPException:
         raise
     except Exception as exc:
