@@ -293,4 +293,86 @@ dashboardTextObserver.observe(document.body,{childList:true,subtree:true});
 try{setDashboardLanguage(localStorage.getItem('dashboardLanguage')||'ko');}catch(e){setDashboardLanguage('ko');}
 const savedApiBase=getNaverApiBase();const apiInput=document.getElementById('naverApiBaseInput');if(apiInput)apiInput.value=savedApiBase;if(savedApiBase)loadNaverData();loadSmartStoreProducts();loadYouTubeShorts();
 </script><!-- GitHub Pages rebuild trigger: 2026-11-17 -->
+
+<style id="guamegi-floating-copilot-style">
+#guamegi-floating-copilot{position:fixed;right:24px;bottom:22px;z-index:99999;font-family:Inter,"Noto Sans KR",Arial,sans-serif}
+#guamegi-copilot-toggle{width:58px;height:58px;border:0;border-radius:50%;background:linear-gradient(145deg,#287cf5,#1456c8);color:#fff;box-shadow:0 8px 26px #174d9b55;cursor:pointer;display:grid;place-items:center;font-size:25px}
+#guamegi-copilot-toggle:hover{transform:translateY(-2px);box-shadow:0 11px 30px #174d9b66}
+#guamegi-copilot-panel{position:absolute;right:0;bottom:72px;width:min(380px,calc(100vw - 28px));height:min(560px,calc(100vh - 115px));background:#fff;border:1px solid #dce5f2;border-radius:17px;box-shadow:0 18px 60px #17274435;display:none;overflow:hidden;flex-direction:column}
+#guamegi-copilot-panel.open{display:flex}
+.guamegi-copilot-head{background:linear-gradient(115deg,#172744,#1e477d);color:#fff;padding:14px 15px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.guamegi-copilot-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:13px}
+.guamegi-copilot-brand small{display:block;font-weight:400;color:#c8d8ef;font-size:10px;margin-top:3px}
+#guamegi-copilot-close{border:0;background:#ffffff20;color:#fff;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:18px}
+#guamegi-copilot-status{font-size:10px;color:#d3e2f5;padding:0 15px 11px;background:#1e477d}
+#guamegi-copilot-messages{flex:1;overflow-y:auto;padding:13px;background:#f7f9fd;display:flex;flex-direction:column;gap:9px}
+.guamegi-copilot-msg{max-width:90%;padding:10px 12px;border-radius:12px;font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+.guamegi-copilot-msg.bot{align-self:flex-start;background:#fff;border:1px solid #e4eaf3;color:#253550}
+.guamegi-copilot-msg.user{align-self:flex-end;background:#e5f0ff;color:#174b91}
+.guamegi-copilot-msg.error{border-color:#f2c9c9;background:#fff5f5;color:#a33}
+#guamegi-copilot-form{padding:10px;border-top:1px solid #e7edf5;background:#fff;display:flex;gap:8px;align-items:flex-end}
+#guamegi-copilot-input{flex:1;min-width:0;max-height:110px;min-height:42px;resize:vertical;border:1px solid #dce5f2;border-radius:10px;padding:10px;font:12px Inter,"Noto Sans KR",Arial,sans-serif;outline:none}
+#guamegi-copilot-input:focus{border-color:#7eaff5;box-shadow:0 0 0 3px #2378f51a}
+#guamegi-copilot-send{border:0;border-radius:10px;background:#2378f5;color:#fff;padding:0 14px;height:42px;font-size:12px;font-weight:750;cursor:pointer}
+#guamegi-copilot-send:disabled{opacity:.55;cursor:wait}
+.guamegi-copilot-foot{font-size:9px;color:#8a97aa;padding:0 12px 9px;background:#fff}
+@media(max-width:600px){#guamegi-floating-copilot{right:14px;bottom:14px}#guamegi-copilot-toggle{width:54px;height:54px}#guamegi-copilot-panel{right:-4px;bottom:66px;height:min(540px,calc(100dvh - 95px));width:calc(100vw - 24px)}}
+</style>
+<div id="guamegi-floating-copilot" data-lang-skip>
+  <section id="guamegi-copilot-panel" aria-label="과메기 AI Copilot" aria-hidden="true">
+    <div class="guamegi-copilot-head">
+      <div class="guamegi-copilot-brand"><span style="font-size:22px">🤖</span><span>과메기 AI Copilot<small>판매·상품·광고 업무 도우미</small></span></div>
+      <button id="guamegi-copilot-close" type="button" aria-label="챗봇 닫기">×</button>
+    </div>
+    <div id="guamegi-copilot-status">기존 Agent API 연결을 사용합니다.</div>
+    <div id="guamegi-copilot-messages" role="log" aria-live="polite">
+      <div class="guamegi-copilot-msg bot">안녕하세요! 과메기 AI Copilot입니다. 상품 가격, 원가, 경쟁사 조사, 광고 및 콘텐츠 전략에 대해 질문해 주세요.</div>
+    </div>
+    <form id="guamegi-copilot-form">
+      <textarea id="guamegi-copilot-input" rows="1" placeholder="질문을 입력하세요..." aria-label="AI에게 질문"></textarea>
+      <button id="guamegi-copilot-send" type="submit">전송</button>
+    </form>
+    <div class="guamegi-copilot-foot">AI 응답은 검토용 제안입니다. 외부 채널 변경은 자동 실행하지 않습니다.</div>
+  </section>
+  <button id="guamegi-copilot-toggle" type="button" aria-label="AI Copilot 열기" aria-expanded="false" title="AI Copilot">✦</button>
+</div>
+<script id="guamegi-floating-copilot-script">
+(()=>{
+ const root=document.getElementById('guamegi-floating-copilot');
+ if(!root)return;
+ const panel=document.getElementById('guamegi-copilot-panel');
+ const toggle=document.getElementById('guamegi-copilot-toggle');
+ const close=document.getElementById('guamegi-copilot-close');
+ const form=document.getElementById('guamegi-copilot-form');
+ const input=document.getElementById('guamegi-copilot-input');
+ const send=document.getElementById('guamegi-copilot-send');
+ const messages=document.getElementById('guamegi-copilot-messages');
+ const status=document.getElementById('guamegi-copilot-status');
+ const apiBase=(()=>{try{return (localStorage.getItem('AGENT_API_BASE')||'https://guamegi-ai-sales-agent-api.onrender.com').replace(/\/$/,'')}catch(e){return 'https://guamegi-ai-sales-agent-api.onrender.com'}})();
+ function open(){panel.classList.add('open');panel.setAttribute('aria-hidden','false');toggle.setAttribute('aria-expanded','true');toggle.setAttribute('aria-label','AI Copilot 닫기');input.focus()}
+ function hide(){panel.classList.remove('open');panel.setAttribute('aria-hidden','true');toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-label','AI Copilot 열기')}
+ toggle.addEventListener('click',()=>panel.classList.contains('open')?hide():open());
+ close.addEventListener('click',hide);
+ function addMessage(text,kind){const el=document.createElement('div');el.className='guamegi-copilot-msg '+kind;el.textContent=String(text);messages.appendChild(el);messages.scrollTop=messages.scrollHeight;return el}
+ async function sendMessage(message){
+   addMessage(message,'user');send.disabled=true;input.disabled=true;status.textContent='AI가 답변을 작성하고 있습니다...';
+   const pending=addMessage('답변을 생성하고 있습니다…','bot');
+   try{
+     const response=await fetch(apiBase+'/agent/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message})});
+     let data={};try{data=await response.json()}catch(e){}
+     if(!response.ok){const detail=data.detail;throw new Error(typeof detail==='string'?detail:detail?JSON.stringify(detail):'HTTP '+response.status)}
+     pending.textContent=data.reply||data.response||'응답 내용이 비어 있습니다.';
+     status.textContent='Agent API 연결 · 응답 완료';
+   }catch(error){
+     pending.classList.add('error');
+     pending.textContent='연결 오류: '+error.message+'\n기존 AI 판매대행 에이전트의 연결 상태와 API 서버를 확인해 주세요.';
+     status.textContent='API 연결을 확인해 주세요.';
+   }finally{send.disabled=false;input.disabled=false;input.focus();messages.scrollTop=messages.scrollHeight}
+ }
+ form.addEventListener('submit',event=>{event.preventDefault();const message=input.value.trim();if(!message||send.disabled)return;input.value='';sendMessage(message)});
+ input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();form.requestSubmit()}});
+ document.addEventListener('keydown',event=>{if(event.key==='Escape'&&panel.classList.contains('open'))hide()});
+})();
+</script>
+
 </body></html>
