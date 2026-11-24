@@ -159,17 +159,22 @@ def normalize_product(row):
     effective_price = discounted_price if discounted_price is not None and (sale_price is None or discounted_price < sale_price) else sale_price
     discount_rate = round((1 - effective_price / sale_price) * 100, 1) if sale_price and effective_price is not None and effective_price < sale_price else 0
     product_name = str(channel.get("name") or channel.get("channelProductName") or origin.get("name") or row.get("name") or "상품명 미제공")
-    # 사용자가 지정한 과메기 전용 수기 기준값: 실제 판매가 30,000원, 할인 설정액 3,000원.
-    # 네이버 API 할인 필드가 누락되거나 다른 가격을 반환해도 과메기 상품에만 이 기준을 적용합니다.
-    is_guamegi = "과메기" in product_name
-    if is_guamegi:
-        sale_price = 30000
+        # 상품별 사용자 확인 기준값: 판가, 할인 설정액, 실제 적용 판매가를 분리합니다.
+    # 네이버 API 응답값보다 아래 확정 기준을 우선 표시합니다.
+    product_name = str(channel.get("name") or channel.get("channelProductName") or origin.get("name") or row.get("name") or "상품명 미제공")
+    normalized_name = product_name.replace(" ", "").lower()
+    if "과메기도시락" in normalized_name:
+        sale_price = 19000
+        discount_amount = 0
+        discounted_price = 19000
+        effective_price = 19000
+        discount_rate = 0
+    elif "과메기야채세트" in normalized_name or "과메기야채" in normalized_name:
+        sale_price = 33000
+        discount_amount = 3000
         discounted_price = 30000
         effective_price = 30000
-        discount_amount = 3000
-        discount_rate = 0
-    else:
-        discount_amount = None
+        discount_rate = round((1 - effective_price / sale_price) * 100, 1)
 
     return {
         "channelProductNo": str(channel.get("channelProductNo") or row.get("channelProductNo") or ""),
