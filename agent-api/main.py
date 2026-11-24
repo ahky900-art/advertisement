@@ -449,6 +449,117 @@ def get_naver_shopping_insight(keywords, category, start_date, end_date, time_un
         "updatedAt": datetime.now(timezone.utc).isoformat()
     }
 
+
+def serpapi_configured():
+    return bool(os.getenv("SERPAPI_API_KEY", "").strip())
+
+
+def search_serpapi_shopping(keywords, max_results=20):
+    api_key = os.getenv("SERPAPI_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("Render 환경변수 SERPAPI_API_KEY가 설정되지 않았습니다.")
+    if not keywords:
+        raise RuntimeError("검색 키워드를 1개 이상 입력해야 합니다.")
+    if len(keywords) > 8:
+        raise RuntimeError("한 번에 최대 8개 키워드까지 검색할 수 있습니다.")
+
+    items = []
+    query_summaries = []
+    seen = set()
+    for keyword in keywords:
+        response = requests.get(
+            "https://serpapi.com/search.json",
+            params={
+                "engine": "google_shopping",
+                "q": keyword,
+                "gl": "kr",
+                "hl": "ko",
+                "api_key": api_key,
+                "num": max(1, min(int(max_results), 40))
+            },
+            timeout=40
+        )
+        if not response.ok:
+            try:
+                detail = response.json().get("error") or response.text[:300]
+            except Exception:
+                detail = response.text[:300]
+            raise RuntimeError(f"SerpApi HTTP {response.status_code} ({keyword}): {str(detail)[:400]}")
+        data = response.json()
+        if data.get("error"):
+            raise RuntimeError(f"SerpApi 오류 ({keyword}): {str(data['error'])[:400]}")
+        results = data.get("shopping_results") or []
+        query_summaries.append({
+            "keyword": keyword,
+            "result_count": len(results),
+            "source": "Google Shopping via SerpApi"
+        })
+        for raw in results:
+            if not isinstance(raw, dict):
+                continue
+            title = str(raw.get("title") or "").strip()
+            link = str(raw.get("product_link") or raw.get("link") or "").strip()
+            price = raw.get("extracted_price")
+            if not isinstance(price, (int, float)):
+                price = None
+            if price is None:
+                price_text = str(raw.get("price") or "")
+                digits = "".join(ch for ch in price_text if ch.isdigit())
+                price = int(digits) if digits else None
+            seller = str(raw.get("source") or raw.get("seller") or "").strip()
+            key = link or (title.lower() + "|" + str(price) + "|" + seller.lower())
+            if not title or key in seen:
+                continue
+            seen.add(key)
+            reviews = raw.get("reviews")
+            try:
+                reviews = int(reviews) if reviews is not None else None
+            except (TypeError, ValueError):
+                reviews = None
+            rating = raw.get("rating")
+            try:
+                rating = float(rating) if rating is not None else None
+            except (TypeError, ValueError):
+                rating = None
+            items.append({
+                "name": title,
+                "price": price,
+                "price_text": str(raw.get("price") or ""),
+                "review_count": reviews,
+                "rating": rating,
+                "supplier": seller,
+                "source": "Google Shopping · SerpApi",
+                "url": link,
+                "thumbnail": raw.get("thumbnail"),
+                "delivery": str(raw.get("delivery") or ""),
+                "query": keyword,
+                "product_type": "과메기 경쟁상품"
+            })
+
+    prices = [x["price"] for x in items if isinstance(x.get("price"), (int, float))]
+    from statistics import median
+    return {
+        "configured": True,
+        "source": "Google Shopping via SerpApi",
+        "market": "KR",
+        "keywords": keywords,
+        "query_results": query_summaries,
+        "count": len(items),
+        "priced_count": len(prices),
+        "price_summary": {
+            "min": round(min(prices)) if prices else None,
+            "median": round(median(prices)) if prices else None,
+            "max": round(max(prices)) if prices else None
+        },
+        "items": items,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "limitations": [
+            "Google Shopping에 노출된 상품 표본이며 네이버 스마트스토어 전체 상품 목록이 아닙니다.",
+            "실제 판매량·매출·시장점유율은 제공하지 않습니다.",
+            "중량·손질 상태·구성품·배송비가 같은 상품끼리 비교해야 합니다."
+        ]
+    }
+
 def get_ads():
     try:
         health = requests.get(ADS+"/api/health", timeout=12).json()
@@ -480,7 +591,7 @@ def debug_egress_ip():
 
 @app.get("/health")
 def health():
-    return {"status":"ok","service":"ai-sales-agent","version":"0.2.1","timestamp":datetime.now(timezone.utc).isoformat(),"llm_configured":llm_configured(),"commerce_configured":commerce_configured(),"domeggook_configured":domeggook_configured(),"naver_shopping_insight_configured":naver_api_hub_configured()}
+    return {"status":"ok","service":"ai-sales-agent","version":"0.2.1","timestamp":datetime.now(timezone.utc).isoformat(),"llm_configured":llm_configured(),"commerce_configured":commerce_configured(),"domeggook_configured":domeggook_configured(),"serpapi_configured":serpapi_configured(),"naver_shopping_insight_configured":naver_api_hub_configured()}
 
 @app.get("/data/products")
 def products(size:int=Query(default=10,ge=1)):
@@ -510,6 +621,20 @@ class ShoppingInsightRequest(BaseModel):
     device: str = ""
     gender: str = ""
     ages: list[str] = Field(default_factory=list)
+
+
+class SerpApiShoppingRequest(BaseModel):
+    keywords: list[str] = Field(min_length=1, max_length=8)
+    max_results: int = Field(default=20, ge=1, le=40)
+
+
+@app.post("/data/serpapi/google-shopping")
+def serpapi_google_shopping(req: SerpApiShoppingRequest):
+    try:
+        keywords = list(dict.fromkeys([str(x).strip() for x in req.keywords if str(x).strip()]))
+        return search_serpapi_shopping(keywords, req.max_results)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 @app.post("/data/naver/shopping-insight")
@@ -683,10 +808,15 @@ def sourcing_analyze(req: SourcingInput):
             competitors.append({
                 "name": name, "price": price,
                 "review_count": int(reviews) if reviews is not None else None,
+                "rating": num(row.get("rating")),
                 "weight_g": weight,
                 "product_type": val(row, "product_type", "type", default="유형 미기재"),
                 "source": val(row, "source", default="출처 미기재"),
                 "supplier": val(row, "supplier", "supplier_name", default=""),
+                "price_text": val(row, "price_text", default=""),
+                "delivery": val(row, "delivery", default=""),
+                "query": val(row, "query", default=""),
+                "thumbnail": val(row, "thumbnail", default=""),
                 "shipping_fee": num(row.get("shipping_fee")),
                 "min_order_qty": num(row.get("min_order_qty")),
                 "item_no": val(row, "item_no", default=""),
