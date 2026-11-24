@@ -1,5 +1,31 @@
-// Windsor.ai Instagram organic media snapshot; read on 2026-11-16. Latest returned media published 2026-11-13. Force refresh unavailable on current Windsor trial plan.
+// Windsor.ai Instagram organic media snapshot; refreshed 2026-11-24. Latest returned media published 2026-11-24.
 window.INSTAGRAM_MEDIA = [
+  {
+    "date": "2026-11-24 10:25",
+    "type": "REELS",
+    "caption": "과메기 어떤 조합으로 먹어야 맛있을까\n포항 바람 어린이와 같이 찾아보아요😃😃\n(* 점수는 주관적 평가입니다!)",
+    "views": 0,
+    "reach": 0,
+    "watch": 0,
+    "skip": 0,
+    "saves": 0,
+    "shares": 0,
+    "interactions": 0,
+    "url": "https://www.instagram.com/reel/DgGxQk0oGkY/"
+  },
+  {
+    "date": "2026-11-23 11:12",
+    "type": "REELS",
+    "caption": "오늘 과메기 가즈아!",
+    "views": 118,
+    "reach": 107,
+    "watch": 3295,
+    "skip": 0.913,
+    "saves": 0,
+    "shares": 0,
+    "interactions": 2,
+    "url": "https://www.instagram.com/reel/DgER0zVSqjC/"
+  },
   {
     "date": "2026-11-13 09:00",
     "type": "REELS",
