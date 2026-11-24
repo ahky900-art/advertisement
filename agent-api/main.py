@@ -262,6 +262,109 @@ def get_products(size=10):
         "updatedAt":datetime.now(timezone.utc).isoformat()
     }
 
+
+def domeggook_configured():
+    return bool(os.getenv("DOMEGGOK_API_KEY", "").strip())
+
+def search_domeggook_products(keyword: str, page: int = 1, size: int = 50):
+    """Read-only search of products currently listed in Dome매 공급(supply)."""
+    api_key = os.getenv("DOMEGGOK_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("Render 환경변수 DOMEGGOK_API_KEY가 설정되지 않았습니다.")
+
+    response = requests.get(
+        "https://www.domeggook.com/ssl/api/",
+        params={
+            "ver": "4.1",
+            "mode": "getItemList",
+            "aid": api_key,
+            "market": "supply",
+            "om": "json",
+            "kw": keyword,
+            "sz": max(1, min(int(size), 200)),
+            "pg": max(1, int(page)),
+            "so": "se"
+        },
+        timeout=30
+    )
+    if not response.ok:
+        raise RuntimeError(f"도매매 API HTTP {response.status_code}")
+
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        raise RuntimeError("도매매 API가 JSON이 아닌 응답을 반환했습니다.") from exc
+
+    root = payload
+    if isinstance(root, dict):
+        root = root.get("domeggook") or root.get("result") or root
+    if not isinstance(root, dict):
+        raise RuntimeError("도매매 API 응답 구조를 확인할 수 없습니다.")
+
+    api_error = root.get("error") or root.get("errorMessage") or root.get("error_msg")
+    if api_error:
+        raise RuntimeError("도매매 API 오류: " + str(api_error)[:250])
+
+    header = root.get("header") if isinstance(root.get("header"), dict) else {}
+    list_node = root.get("list") or root.get("items") or {}
+    if isinstance(list_node, dict):
+        raw_items = list_node.get("item") or list_node.get("items") or []
+    else:
+        raw_items = list_node
+    if isinstance(raw_items, dict):
+        raw_items = [raw_items]
+    if not isinstance(raw_items, list):
+        raw_items = []
+
+    def integer(value):
+        try:
+            return int(str(value).replace(",", "").strip()) if value not in (None, "") else None
+        except (TypeError, ValueError):
+            return None
+
+    def text_value(value):
+        if isinstance(value, dict):
+            return ""
+        return str(value).strip() if value is not None else ""
+
+    items = []
+    for row in raw_items[:200]:
+        if not isinstance(row, dict):
+            continue
+        delivery = row.get("deli") if isinstance(row.get("deli"), dict) else {}
+        market = row.get("market") if isinstance(row.get("market"), dict) else {}
+        item_no = text_value(row.get("no") or row.get("itemNo"))
+        items.append({
+            "item_no": item_no,
+            "name": text_value(row.get("title") or row.get("name")) or "상품명 미제공",
+            "price": integer(row.get("price")),
+            "original_price": integer(row.get("priceOrg")),
+            "image_url": text_value(row.get("thumb")) or None,
+            "supplier_id": text_value(row.get("id")) or None,
+            "supplier_name": text_value(row.get("nick") or row.get("id")) or "판매자 미제공",
+            "min_order_qty": integer(row.get("unitQty")),
+            "business_only": row.get("comOnly"),
+            "shipping_type": text_value(delivery.get("who")),
+            "shipping_fee": integer(delivery.get("fee")),
+            "shipping_fee_additional": delivery.get("add"),
+            "url": text_value(row.get("url")) or None,
+            "supply_active": market.get("supply", True)
+        })
+
+    return {
+        "configured": True,
+        "source": "도매매 Open API",
+        "market": "supply",
+        "keyword": keyword,
+        "page": max(1, int(page)),
+        "page_size": max(1, min(int(size), 200)),
+        "total_count": integer(header.get("numberOfItems")) if header else len(items),
+        "total_pages": integer(header.get("numberOfPages")) if header else None,
+        "count": len(items),
+        "items": items,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+
 def get_ads():
     try:
         health = requests.get(ADS+"/api/health", timeout=12).json()
@@ -293,7 +396,7 @@ def debug_egress_ip():
 
 @app.get("/health")
 def health():
-    return {"status":"ok","service":"ai-sales-agent","version":"0.2.1","timestamp":datetime.now(timezone.utc).isoformat(),"llm_configured":llm_configured(),"commerce_configured":commerce_configured()}
+    return {"status":"ok","service":"ai-sales-agent","version":"0.2.1","timestamp":datetime.now(timezone.utc).isoformat(),"llm_configured":llm_configured(),"commerce_configured":commerce_configured(),"domeggook_configured":domeggook_configured()}
 
 @app.get("/data/products")
 def products(size:int=Query(default=10,ge=1)):
@@ -301,6 +404,17 @@ def products(size:int=Query(default=10,ge=1)):
         return get_products(size)
     except Exception as exc:
         raise HTTPException(status_code=502,detail=str(exc)) from exc
+
+@app.get("/data/domeggook/search")
+def domeggook_search(
+    kw: str = Query(default="과메기", min_length=1, max_length=100),
+    size: int = Query(default=50, ge=1, le=200),
+    page: int = Query(default=1, ge=1)
+):
+    try:
+        return search_domeggook_products(kw, page, size)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 @app.get("/data/overview")
 def overview():
@@ -341,7 +455,7 @@ def chat(req:ChatRequest):
 
 @app.get("/agent/capabilities/legacy")
 def capabilities():
-    return {"chat":llm_configured(),"read_only_data_connectors":{"naver_commerce_products":commerce_configured(),"naver_search_ads":True,"instagram_snapshot":True,"orders_and_sales":False},"task_approval":False,"external_execution":False}
+    return {"chat":llm_configured(),"read_only_data_connectors":{"naver_commerce_products":commerce_configured(),"domeggook_supply_products":domeggook_configured(),"naver_search_ads":True,"instagram_snapshot":True,"orders_and_sales":False},"task_approval":False,"external_execution":False}
 
 
 # --- Agent workflows: analysis first, approval before every external write ---
@@ -466,7 +580,12 @@ def sourcing_analyze(req: SourcingInput):
                 "review_count": int(reviews) if reviews is not None else None,
                 "weight_g": weight,
                 "product_type": val(row, "product_type", "type", default="유형 미기재"),
-                "source": val(row, "source", default="출처 미기재")
+                "source": val(row, "source", default="출처 미기재"),
+                "supplier": val(row, "supplier", "supplier_name", default=""),
+                "shipping_fee": num(row.get("shipping_fee")),
+                "min_order_qty": num(row.get("min_order_qty")),
+                "item_no": val(row, "item_no", default=""),
+                "url": val(row, "url", default="")
             })
     prices = [x["price"] for x in competitors if x["price"] is not None]
     competitor_summary = {
@@ -810,7 +929,7 @@ def capabilities_v2():
       "youtube_public_data":False,
       "approval_queue":True,
       "external_execution":False,
-      "connected_channels":{"naver_smartstore_products":commerce_configured(),"naver_ads":True,"instagram_live_api":False},
+      "connected_channels":{"naver_smartstore_products":commerce_configured(),"domeggook_supply_products":domeggook_configured(),"naver_ads":True,"instagram_live_api":False},
       "limitations":["승인 기능은 승인 이력만 기록하며 외부 변경은 실행하지 않습니다.","대화 이력은 DATABASE_URL에 연결된 PostgreSQL에 저장됩니다. 브라우저별 client_id로 구분되며 다른 기기와 공유하려면 별도 로그인 기능이 필요합니다.",
       "승인 DB는 AGENT_DB_PATH 기본값(/tmp)의 임시 저장입니다. 영구 보존에는 별도 PostgreSQL 전환이 필요합니다.","Instagram은 현재 라이브 API가 아닌 기존 대시보드 스냅샷만 확인 가능합니다."]
     }
