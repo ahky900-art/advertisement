@@ -107,7 +107,7 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"status":"ok","service":"ai-sales-agent","version":"0.2.1","timestamp":datetime.now(timezone.utc).isoformat(),"llm_configured":bool(os.getenv("OPENAI_API_KEY") or os.getenv("GEMINI_CHAT_API_KEY")),"llm_providers":{"openai":bool(os.getenv("OPENAI_API_KEY")),"gemini":bool(os.getenv("GEMINI_CHAT_API_KEY"))},"commerce_configured":commerce_configured()}
+    return {"status":"ok","service":"ai-sales-agent","version":"0.2.1","timestamp":datetime.now(timezone.utc).isoformat(),"llm_configured":bool(os.getenv("OPENAI_API_KEY") or os.getenv("GEMINI_CHAT_API_KEY") or os.getenv("GEMINI_API_KEY")),"llm_providers":{"openai":bool(os.getenv("OPENAI_API_KEY")),"gemini":bool(os.getenv("GEMINI_CHAT_API_KEY") or os.getenv("GEMINI_API_KEY"))},"commerce_configured":commerce_configured()}
 
 @app.get("/data/products")
 def products(size:int=Query(default=20,ge=1,le=50)):
