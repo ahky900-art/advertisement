@@ -17,6 +17,9 @@
 <div class="field"><label>조회 단위</label><select id="insightUnit"><option value="week" selected>주간</option><option value="month">월간</option><option value="date">일간</option></select></div>
 <div class="field"><label>시작일</label><input id="insightStart" type="date"></div>
 <div class="field"><label>종료일</label><input id="insightEnd" type="date"></div>
+<div class="field"><label>기기</label><select id="insightDevice"><option value="">전체</option><option value="mo">모바일</option><option value="pc">PC</option></select></div>
+<div class="field"><label>성별</label><select id="insightGender"><option value="">전체</option><option value="f">여성</option><option value="m">남성</option></select></div>
+<div class="field"><label>연령대</label><select id="insightAge"><option value="">전체</option><option value="10">10대</option><option value="20">20대</option><option value="30">30대</option><option value="40">40대</option><option value="50">50대</option><option value="60">60대 이상</option></select></div>
 </div>
 <div class="actions"><button class="btn primary" id="runInsight">네이버 수요 분석 조회</button></div>
 <div class="result" id="insightStatus">NAVER API HUB 키 등록 후 조회할 수 있습니다.</div>
@@ -73,7 +76,7 @@ $('runInsight').onclick=async()=>{
  const category=$('insightCategory').value.trim();if(!category){show('insightStatus','네이버 쇼핑 카테고리 코드를 입력하세요.');return;}
  $('runInsight').disabled=true;show('insightStatus','네이버 쇼핑인사이트 조회 중...');
  try{
-  lastInsight=await api('/data/naver/shopping-insight',{method:'POST',body:JSON.stringify({keywords,category,start_date:$('insightStart').value,end_date:$('insightEnd').value,time_unit:$('insightUnit').value})});
+  lastInsight=await api('/data/naver/shopping-insight',{method:'POST',body:JSON.stringify({keywords,category,start_date:$('insightStart').value,end_date:$('insightEnd').value,time_unit:$('insightUnit').value,device:$('insightDevice').value,gender:$('insightGender').value,ages:$('insightAge').value?[$('insightAge').value]:[]})});
   renderInsight(lastInsight);show('insightStatus','조회 성공 · '+lastInsight.count+'개 키워드 결과 · '+lastInsight.updatedAt);
   const summaries=(lastInsight.results||[]).map(item=>{const points=item.data||[];const peak=points.reduce((a,b)=>(Number(b.ratio)||0)>(Number(a.ratio)||0)?b:a,{});return {keyword:item.title||((item.keywords||[]).join(', ')),trend_score:peak.ratio??0,source:'NAVER API HUB Shopping Insight',peak_period:peak.period||''};});
   sourcingRows.keywords=summaries;drawSourcingRows();
