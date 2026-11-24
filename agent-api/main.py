@@ -378,6 +378,8 @@ class PricingInput(BaseModel):
 
 class SourcingInput(BaseModel):
     product_name: str = Field(min_length=1, max_length=200)
+    analysis_goal: str = Field(default="구매전환 및 판매기회 발굴", max_length=200)
+    season: str = Field(default="현재 시즌", max_length=100)
     keyword_metrics: list[dict] = Field(default_factory=list)
     competitor_observations: list[dict] = Field(default_factory=list)
     social_observations: list[dict] = Field(default_factory=list)
@@ -398,28 +400,185 @@ class ApprovalInput(BaseModel):
 
 @app.post("/agent/sourcing/analyze")
 def sourcing_analyze(req: SourcingInput):
-    # Never claim private competitor sales volume. Only score the observations supplied.
-    def avg(values):
-        nums = [float(v) for v in values if isinstance(v, (int,float))]
-        return sum(nums)/len(nums) if nums else None
-    keyword_rows = []
-    for row in req.keyword_metrics:
-        keyword_rows.append({
-            "keyword": str(row.get("keyword","")),
-            "trend_score": row.get("trend_score"),
-            "search_volume": row.get("search_volume"),
-            "source": row.get("source","not_specified"),
-            "recommendation": "검토 대상" if row.get("trend_score") is not None else "추세 데이터 필요"
+    """Evidence-led scoring; all scores are heuristic, not demand forecasts."""
+    import re
+    from statistics import median
+
+    def num(v):
+        if isinstance(v, bool):
+            return None
+        if isinstance(v, (int, float)):
+            return float(v) if v >= 0 else None
+        if isinstance(v, str):
+            try:
+                x = float(re.sub(r"[^0-9.]", "", v.replace(",", "")))
+                return x if x >= 0 else None
+            except ValueError:
+                return None
+        return None
+
+    def val(row, *keys, default=""):
+        for key in keys:
+            if row.get(key) is not None and str(row.get(key)).strip():
+                return str(row[key]).strip()
+        return default
+
+    keywords = []
+    intent_terms = ("가격", "구매", "주문", "택배", "선물", "세트", "손질", "10미", "20미", "파는곳", "추천")
+    for row in req.keyword_metrics[:100]:
+        if not isinstance(row, dict):
+            continue
+        word = val(row, "keyword", "name")
+        if not word:
+            continue
+        keywords.append({
+            "keyword": word,
+            "trend_score": num(row.get("trend_score")),
+            "search_volume": num(row.get("search_volume")),
+            "source": val(row, "source", default="출처 미기재"),
+            "purchase_intent": "높음" if any(t in word for t in intent_terms) else "보통"
         })
+
+    max_volume = max([x["search_volume"] for x in keywords if x["search_volume"] is not None], default=None)
+    max_trend = max([x["trend_score"] for x in keywords if x["trend_score"] is not None], default=None)
+    for item in keywords:
+        components = []
+        if max_volume and item["search_volume"] is not None:
+            components.append(item["search_volume"] / max_volume * 70)
+        if max_trend and item["trend_score"] is not None:
+            components.append(item["trend_score"] / max_trend * 70)
+        components.append(30 if item["purchase_intent"] == "높음" else 15)
+        item["priority_score"] = round(sum(components) / len(components)) if len(components) > 1 else None
+        item["recommendation"] = "우선 검토" if item["priority_score"] is not None and item["priority_score"] >= 60 else ("보조 키워드" if item["priority_score"] is not None else "추가 데이터 필요")
+        item["score_basis"] = "입력 표본 내 상대 검색량·추세 및 키워드 문구 기반 휴리스틱"
+
+    competitors = []
+    for row in req.competitor_observations[:100]:
+        if not isinstance(row, dict):
+            continue
+        price = num(row.get("price"))
+        reviews = num(row.get("review_count"))
+        weight = num(row.get("weight_g") or row.get("weight"))
+        name = val(row, "name", "product_name", "title", default="상품명 미기재")
+        if name != "상품명 미기재" or price is not None:
+            competitors.append({
+                "name": name, "price": price,
+                "review_count": int(reviews) if reviews is not None else None,
+                "weight_g": weight,
+                "product_type": val(row, "product_type", "type", default="유형 미기재"),
+                "source": val(row, "source", default="출처 미기재")
+            })
+    prices = [x["price"] for x in competitors if x["price"] is not None]
+    competitor_summary = {
+        "observed_count": len(competitors), "priced_count": len(prices),
+        "min_price": round(min(prices)) if prices else None,
+        "median_price": round(median(prices)) if prices else None,
+        "max_price": round(max(prices)) if prices else None,
+        "warning": "중량·손질 상태·구성품·배송비가 같은 상품끼리만 가격을 직접 비교해야 합니다."
+    }
+
+    social = []
+    for row in req.social_observations[:100]:
+        if not isinstance(row, dict):
+            continue
+        observation = val(row, "observation", "content", "description")
+        if observation:
+            source = val(row, "source", default="출처 미기재")
+            social.append({
+                "type": val(row, "type", default="유형 미기재"),
+                "platform": val(row, "platform", default="플랫폼 미기재"),
+                "observation": observation, "source": source,
+                "evidence_quality": "출처 확인 필요" if source == "출처 미기재" else "사용자 제공 관측"
+            })
+
+    seasonality = []
+    for row in req.seasonality_observations[:100]:
+        if isinstance(row, dict):
+            observation = val(row, "observation", "content", "description", "season")
+            if observation:
+                seasonality.append({
+                    "observation": observation,
+                    "period": val(row, "period", "season", default=req.season),
+                    "source": val(row, "source", default="출처 미기재")
+                })
+
+    coverage = sum(bool(x) for x in (keywords, competitors, social, seasonality))
+    total = len(keywords) + len(competitors) + len(social) + len(seasonality)
+    confidence = "낮음" if coverage <= 1 or total < 3 else ("보통" if coverage <= 3 else "자료 범위 내 참고")
+    opportunities = []
+    ranked = sorted([x for x in keywords if x["priority_score"] is not None], key=lambda x: x["priority_score"], reverse=True)
+    if ranked:
+        opportunities.append({
+            "area": "검색 유입",
+            "finding": "우선 검토 키워드: " + ", ".join(x["keyword"] for x in ranked[:3]),
+            "action": "상품명·상세페이지·광고 소재 후보로 분리해 소규모 테스트",
+            "evidence": "사용자 입력 키워드 관측",
+            "risk": "입력 표본 안에서만 비교한 점수이며 전체 시장 순위가 아닙니다."
+        })
+    if competitors:
+        opportunities.append({
+            "area": "경쟁상품 포지셔닝",
+            "finding": f"경쟁 관측 {len(competitors)}건, 가격 확인 {len(prices)}건",
+            "action": "순중량·손질 수준·구성품·배송비를 표준화한 뒤 가격 포지션 결정",
+            "evidence": "사용자 입력 경쟁상품 관측",
+            "risk": "리뷰 수는 판매량이나 시장점유율이 아닙니다."
+        })
+    if social:
+        opportunities.append({
+            "area": "SNS 콘텐츠",
+            "finding": f"SNS 관측 {len(social)}건",
+            "action": "아이디어와 실제 반응 데이터 구분 후 저장·공유·프로필 방문·구매 클릭 추적",
+            "evidence": "사용자 입력 SNS 관측",
+            "risk": "단순 언급만으로 유행이나 구매전환을 단정할 수 없습니다."
+        })
+    if seasonality:
+        opportunities.append({
+            "area": "시즌 수요",
+            "finding": f"계절성 관측 {len(seasonality)}건",
+            "action": "주차별 검색 추세·주문량·기온·명절 변수를 누적해 패턴 검증",
+            "evidence": "사용자 입력 계절성 관측",
+            "risk": "단일 시점 관측으로 계절성을 확정할 수 없습니다."
+        })
+
+    strategy = []
+    if ranked:
+        strategy.append({"priority": 1, "action": "구매의도 키워드 중심으로 상품명·광고문구 후보 구성", "metric": "키워드별 클릭률·구매전환율", "approval_required": True})
+    if competitors:
+        strategy.append({"priority": 2, "action": "동일 조건 경쟁상품 비교 후 가격과 상품구성 결정", "metric": "동일 조건 가격 차이·공헌이익", "approval_required": True})
+    if social:
+        strategy.append({"priority": 3, "action": "SNS 소재 2~3개를 소규모 테스트", "metric": "저장·공유·프로필 방문·구매 클릭", "approval_required": True})
+    if not strategy:
+        strategy.append({"priority": 1, "action": "출처가 확인된 시장 관측 데이터를 추가 확보", "metric": "검증 가능한 관측 데이터 건수", "approval_required": False})
+
     return {
-      "agent":"sourcing","product":req.product_name,"status":"analysis_only",
-      "keywords":keyword_rows,
-      "competitor_observations":req.competitor_observations,
-      "social_observations":req.social_observations,
-      "seasonality_observations":req.seasonality_observations,
-      "limitations":["경쟁사 실제 주문량·매출은 제공되지 않으면 추정하지 않습니다.","관측값이 없는 항목은 미확인으로 유지합니다."],
-      "next_step":"추천 키워드·상품명·광고문구는 승인 요청으로 등록한 뒤 별도 승인 전에는 게시하지 않습니다.",
-      "updated_at":datetime.now(timezone.utc).isoformat()
+        "agent": "sourcing", "product": req.product_name,
+        "analysis_goal": req.analysis_goal, "season": req.season,
+        "status": "analysis_only",
+        "market_opportunity": {
+            "assessment": "기회 후보 도출" if opportunities else "관측 데이터 부족",
+            "opportunities": opportunities, "confidence": confidence,
+            "confidence_note": "관측 범위에 대한 정성 평가이며 통계적 신뢰구간이 아닙니다.",
+            "coverage": {"keywords": len(keywords), "competitors": len(competitors), "social": len(social), "seasonality": len(seasonality)}
+        },
+        "keywords": keywords,
+        "competitor_observations": competitors,
+        "competitor_summary": competitor_summary,
+        "social_observations": social,
+        "seasonality_observations": seasonality,
+        "sales_strategy": strategy,
+        "approval_guidance": {
+            "status": "승인 전",
+            "message": "추천 상품명·가격·광고문구·게시물은 담당자 검토와 별도 승인 후 실행합니다. 이 API는 외부 채널을 변경하지 않습니다."
+        },
+        "limitations": [
+            "검색량과 추세 점수는 출처 및 측정 기간을 확인해야 합니다.",
+            "경쟁상품 리뷰 수는 주문량·매출·시장점유율이 아닙니다.",
+            "중량·손질 수준·구성품·배송비가 다른 상품 가격은 직접 비교할 수 없습니다.",
+            "SNS 관측은 출처와 반응 지표가 확인되기 전까지 트렌드로 확정하지 않습니다.",
+            "관측되지 않은 항목은 미확인으로 유지하며 매출·전환율을 임의 추정하지 않습니다."
+        ],
+        "next_step": "경쟁상품의 중량·손질·구성·배송비를 같은 기준으로 보완하고, 출처가 확인된 키워드와 SNS 반응을 누적해 재평가합니다.",
+        "updated_at": datetime.now(timezone.utc).isoformat()
     }
 
 @app.post("/agent/pricing/analyze")
