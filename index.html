@@ -125,7 +125,18 @@
 </section>
 <section class="page" id="automation"><div class="page-title"><div><h1>콘텐츠 자동화</h1><div class="sub">포항 바람 어린이 캐릭터를 활용한 Instagram 애니메이션 릴스 전용 기획</div></div><span class="pill">릴스 전용 · 애니메이션</span></div><div class="content-grid"><div class="content-tile"><span class="pill">다음 릴스 추천</span><h3>과메기 보관·해동, 배송받은 뒤 어떻게 할까?</h3><p>포항 바람 어린이가 택배 상자를 열고 보관 방법을 고민하는 짧은 상황극. 냉장·냉동 보관 안내와 먹기 전 해동 순서를 장면별 애니메이션으로 설명합니다.</p><b>#과메기보관 #과메기해동 #과메기택배</b></div><div class="content-tile"><span class="pill">후속 릴스</span><h3>과메기 10미 vs 20미, 누구에게 맞을까?</h3><p>어린이가 혼자 먹을지 가족과 나눌지 고민하는 선택형 스토리. 구성과 추천 인원을 비교해 구매 결정을 돕습니다.</p><b>#과메기추천 #과메기10미 #과메기20미</b></div><div class="content-tile"><span class="pill">후속 릴스</span><h3>포항 바람 어린이의 겨울 과메기 한상</h3><p>과메기와 김·미역·쪽파·마늘·초장 등 곁들임을 하나씩 골라 한 상을 완성하는 애니메이션. 실제 상품 구성과 다른 소품은 구분해 표현합니다.</p><b>#포항과메기 #과메기한상 #겨울별미</b></div></div><div class="notice">운영 방향: 이미지·카드뉴스·YouTube 쇼츠 기획은 이 탭에서 제외하고 Instagram 릴스만 관리합니다. 모든 신규 콘텐츠는 오리지널 캐릭터 애니메이션 형식으로 제작하며, 현재 이 화면은 기획 관리용으로 실제 영상 생성·자동 게시 기능은 별도 연결이 필요합니다.</div></section>
 <section class="page" id="instagram"><div class="page-title"><div><h1>인스타그램</h1><div class="sub">Instagram 유기적 콘텐츠 데이터 · 최근 30일 스냅샷 (2026.11.24 조회)</div></div><span class="status">데이터 파일 탑재</span></div><div class="ig-kpis" id="igKpis"></div><div class="notice">Instagram 콘텐츠 실적이며 스마트스토어 주문·매출 전환 데이터는 아닙니다. 좋아요·댓글은 조회 결과에서 제공되지 않아 제외합니다.</div><div class="card"><div class="card-head"><h2>게시물별 성과</h2><select class="select" id="igFilter" onchange="renderInstagram()"><option value="ALL">전체 콘텐츠</option><option value="REELS">릴스</option><option value="STATIC">이미지·캐러셀</option></select></div><div class="ig-table-wrap"><table class="table"><thead><tr><th>게시일</th><th>유형</th><th>콘텐츠</th><th>조회수</th><th>도달</th><th>평균 시청</th><th>건너뛰기율</th><th>저장</th><th>공유</th><th>원문</th></tr></thead><tbody id="igRows"></tbody></table></div></div><div class="card" style="margin-top:10px"><div class="card-head"><h2>릴스 시청 품질</h2></div><div id="igReelSummary" class="sub"></div></div></section>
-<section class="page" id="youtube"><div class="page-title"><div><h1>유튜브 쇼츠</h1><div class="sub">등록한 쇼츠 영상의 썸네일 및 공개 조회수</div></div><span class="pill">영상 링크 등록</span></div><div class="card"><div class="card-head"><h2>내 쇼츠 영상</h2><button class="chip" onclick="loadYouTubeShorts()">영상 정보 새로고침 ↻</button></div><div class="two-col" style="align-items:center"><div><a id="ytVideoLink" href="https://youtube.com/shorts/IHvEovPcb7g" target="_blank" rel="noopener"><img id="ytThumbnail" src="https://i.ytimg.com/vi/IHvEovPcb7g/hqdefault.jpg" alt="등록한 과메기 쇼츠 썸네일" style="width:100%;max-width:420px;aspect-ratio:16/9;object-fit:cover;border-radius:12px"></a></div><div><h3 id="ytVideoTitle">과메기 쇼츠 영상</h3><p class="sub" id="ytVideoChannel">등록된 영상</p><div class="kpi-value" id="ytViewCount">조회수 확인 중</div><p class="sub" id="ytVideoUpdated">YouTube 공개 통계 조회 중</p><p><a id="ytOpenLink" href="https://youtube.com/shorts/IHvEovPcb7g" target="_blank" rel="noopener">YouTube에서 영상 보기 ↗</a></p></div></div><div class="notice" id="ytDataNotice">썸네일은 영상 ID로 표시합니다. 조회수·제목은 YouTube Data API 연결 상태에 따라 자동 갱신됩니다.</div></div><div class="content-grid"><div class="content-tile"><span class="pill">제작 예정</span><h3>과메기 10미 vs 20미</h3><p>구성·양·추천 인원 비교. 구매 선택을 빠르게 돕는 20초 쇼츠.</p></div><div class="content-tile"><span class="pill">제작 예정</span><h3>과메기 손질법</h3><p>손질 전후 차이, 보관법, 먹기 좋은 크기를 설명하는 정보형 영상.</p></div><div class="content-tile"><span class="pill">제작 예정</span><h3>겨울철 과메기 한상</h3><p>야채 세트와 곁들임을 강조하는 식탁·레시피 콘텐츠.</p></div><div class="content-tile"><span class="pill">게시된 영상</span><h3>내 과메기 쇼츠</h3><p>등록한 YouTube Shorts 영상 링크입니다.</p><a href="https://youtube.com/shorts/IHvEovPcb7g?si=CG1KiKI0M-2nzIvG" target="_blank" rel="noopener noreferrer">유튜브 영상 열기 ↗</a></div></div></section>
+<section class="page" id="youtube"><div class="page-title"><div><h1>유튜브 쇼츠</h1><div class="sub">등록한 쇼츠 영상의 썸네일 및 공개 조회수</div></div><span class="pill">영상 링크 등록</span></div><div class="card"><div class="card-head"><h2>내 쇼츠 영상</h2><button class="chip" onclick="loadYouTubeShorts()">영상 정보 새로고침 ↻</button></div><div class="two-col" style="align-items:center"><div><a id="ytVideoLink" href="https://youtube.com/shorts/IHvEovPcb7g" target="_blank" rel="noopener"><img id="ytThumbnail" src="https://i.ytimg.com/vi/IHvEovPcb7g/hqdefault.jpg" alt="등록한 과메기 쇼츠 썸네일" style="width:100%;max-width:420px;aspect-ratio:16/9;object-fit:cover;border-radius:12px"></a></div><div><h3 id="ytVideoTitle">과메기 쇼츠 영상</h3><p class="sub" id="ytVideoChannel">등록된 영상</p><div class="kpi-value" id="ytViewCount">조회수 확인 중</div><p class="sub" id="ytVideoUpdated">YouTube 공개 통계 조회 중</p><p><a id="ytOpenLink" href="https://youtube.com/shorts/IHvEovPcb7g" target="_blank" rel="noopener">YouTube에서 영상 보기 ↗</a></p></div></div><div class="notice" id="ytDataNotice">썸네일은 영상 ID로 표시합니다. 조회수·제목은 YouTube Data API 연결 상태에 따라 자동 갱신됩니다.</div></div>
+<div class="card" style="margin-top:12px">
+ <div class="card-head"><h2>YouTube 영상 키워드 검색</h2><span class="pill">YouTube Data API v3</span></div>
+ <p class="sub">키워드를 입력하면 공개 영상의 제목·채널·조회수·게시일을 검색합니다. 결과는 관련도순이며, 영상 자체를 내려받거나 분석하는 기능은 아닙니다.</p>
+ <form id="youtubeSearchForm" onsubmit="searchYouTubeVideos(event)" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+  <input id="youtubeSearchQuery" type="search" maxlength="200" value="과메기" placeholder="예: 포항 과메기, 과메기 먹는 법" required style="flex:1;min-width:220px;border:1px solid var(--line);border-radius:9px;padding:11px;font:inherit">
+  <button class="action" id="youtubeSearchButton" type="submit">유튜브 검색</button>
+ </form>
+ <div id="youtubeSearchNotice" class="notice" style="margin-top:10px">검색어를 입력하고 검색 버튼을 누르세요.</div>
+ <div id="youtubeSearchResults" class="content-grid" style="margin-top:12px"></div>
+</div>
+<div class="content-grid"><div class="content-tile"><span class="pill">제작 예정</span><h3>과메기 10미 vs 20미</h3><p>구성·양·추천 인원 비교. 구매 선택을 빠르게 돕는 20초 쇼츠.</p></div><div class="content-tile"><span class="pill">제작 예정</span><h3>과메기 손질법</h3><p>손질 전후 차이, 보관법, 먹기 좋은 크기를 설명하는 정보형 영상.</p></div><div class="content-tile"><span class="pill">제작 예정</span><h3>겨울철 과메기 한상</h3><p>야채 세트와 곁들임을 강조하는 식탁·레시피 콘텐츠.</p></div><div class="content-tile"><span class="pill">게시된 영상</span><h3>내 과메기 쇼츠</h3><p>등록한 YouTube Shorts 영상 링크입니다.</p><a href="https://youtube.com/shorts/IHvEovPcb7g?si=CG1KiKI0M-2nzIvG" target="_blank" rel="noopener noreferrer">유튜브 영상 열기 ↗</a></div></div></section>
 <section class="page" id="calendar"><div class="page-title"><div><h1>게시 일정</h1><div class="sub">2026년 11월 · Instagram 애니메이션 릴스 제작·검수·게시 일정</div></div></div><div class="card"><div class="schedule"><div class="schedule-row"><time>11.23</time><span>릴스 · 오늘 과메기 가즈아!</span><span class="status">게시 완료</span></div><div class="schedule-row"><time>11.24</time><span>릴스 · 과메기 어떤 조합으로 먹어야 맛있을까?</span><span class="status">게시 완료</span></div><div class="schedule-row"><time>11.26</time><span>애니메이션 릴스 · 과메기 보관·해동, 배송받은 뒤 어떻게 할까?</span><span class="waiting">제작 예정</span></div><div class="schedule-row"><time>11.28</time><span>애니메이션 릴스 · 과메기 10미 vs 20미, 누구에게 맞을까?</span><span class="waiting">제작 예정</span></div><div class="schedule-row"><time>11.30</time><span>애니메이션 릴스 · 포항 바람 어린이의 겨울 과메기 한상</span><span class="waiting">제작 예정</span></div></div><div class="notice" style="margin-top:12px">게시 완료는 Instagram 계정에서 확인한 11월 23일·24일 게시물 기준입니다. 이후 일정은 애니메이션 릴스 제작 계획이며 실제 게시일은 제작·검수 상황에 따라 조정합니다.</div></div></section>
 <section class="page" id="reports"><div class="page-title"><div><h1>성과 리포트</h1><div class="sub">광고·상품·소셜 콘텐츠 성과 통합</div></div></div><div class="two-col"><div class="card"><h2>현재 데이터 범위</h2><p class="sub">Instagram 최근 30일 게시물 19건 스냅샷</p><p class="sub">광고·주문·매출: 실제 API 연결 전</p><p class="sub">콘텐츠 제작: 기획·상태 데이터</p></div><div class="card"><h2>리포트 운영 원칙</h2><p class="sub">게시물별 도달 합계와 계정 순도달을 구분하고, 광고 성과와 자연 유입 성과를 분리합니다. 매출 전환은 주문 데이터와 캠페인 태깅을 연결한 뒤 산출합니다.</p></div></div></section>
 <section class="page" id="contentStudio">
@@ -193,6 +204,48 @@ async function loadYouTubeShorts(){
   if(views)views.textContent='조회수 API 연결 필요';
   if(updated)updated.textContent='썸네일은 표시 중 · 통계 조회 실패';
   if(notice)notice.textContent='영상 링크와 썸네일은 표시됩니다. 조회수·제목 자동 조회를 위해 Render 환경변수 YOUTUBE_API_KEY가 필요합니다. ('+error.message+')';
+ }
+}
+async function searchYouTubeVideos(event){
+ if(event)event.preventDefault();
+ const input=document.getElementById('youtubeSearchQuery');
+ const button=document.getElementById('youtubeSearchButton');
+ const notice=document.getElementById('youtubeSearchNotice');
+ const results=document.getElementById('youtubeSearchResults');
+ const query=(input?.value||'').trim();
+ if(!query){if(notice)notice.textContent='검색어를 입력해 주세요.';return;}
+ if(button){button.disabled=true;button.textContent='검색 중…';}
+ if(notice)notice.textContent='"'+query+'" 검색 중입니다. 잠시 기다려 주세요.';
+ if(results)results.innerHTML='';
+ try{
+  const url=AGENT_API_BASE_URL+'/youtube/search?q='+encodeURIComponent(query)+'&max_results=8';
+  const response=await fetch(url,{headers:{'Accept':'application/json'},cache:'no-store'});
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.detail||('HTTP '+response.status));
+  const items=Array.isArray(data.items)?data.items:[];
+  if(!items.length){if(notice)notice.textContent='검색 결과가 없습니다. 다른 키워드로 검색해 보세요.';return;}
+  if(notice)notice.textContent='검색 완료 · "'+query+'" · '+items.length+'개 영상 · YouTube Data API v3';
+  if(results)results.innerHTML=items.map(item=>{
+   const id=String(item.video_id||'');
+   const safeId=/^[A-Za-z0-9_-]{11}$/.test(id)?id:'';
+   const videoUrl='https://www.youtube.com/watch?v='+encodeURIComponent(safeId);
+   const thumbnail=safeId?'https://i.ytimg.com/vi/'+safeId+'/mqdefault.jpg':'';
+   const published=item.published_at?new Date(item.published_at).toLocaleDateString('ko-KR'):'게시일 미제공';
+   const views=item.view_count==null?'조회수 비공개':Number(item.view_count).toLocaleString('ko-KR')+'회';
+   const description=String(item.description||'').slice(0,180);
+   return '<article class="content-tile" style="min-width:0">'+
+    (thumbnail?'<a href="'+videoUrl+'" target="_blank" rel="noopener noreferrer"><img src="'+thumbnail+'" alt="" loading="lazy" style="width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:9px"></a>':'')+
+    '<h3 style="margin-top:10px">'+esc(item.title||'제목 미제공')+'</h3>'+
+    '<p class="sub">'+esc(item.channel_title||'채널 미제공')+'</p>'+
+    '<p class="sub">조회수 '+esc(views)+' · 게시일 '+esc(published)+'</p>'+
+    (description?'<p class="sub">'+esc(description)+'</p>':'')+
+    '<a href="'+videoUrl+'" target="_blank" rel="noopener noreferrer">YouTube 영상 보기 ↗</a>'+
+   '</article>';
+  }).join('');
+ }catch(error){
+  if(notice)notice.textContent='유튜브 검색 실패: '+error.message+' · Render 환경변수 YOUTUBE_API_KEY와 API 배포 상태를 확인하세요.';
+ }finally{
+  if(button){button.disabled=false;button.textContent='유튜브 검색';}
  }
 }
 async function loadSmartStoreProducts(){
