@@ -18,6 +18,7 @@ class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=8000)
     client_id: UUID
     conversation_id: UUID
+    provider: str = Field(default="openai", pattern="^(openai|gemini)$")
 
 def llm_key():
     return os.getenv("POSTECH_API_KEY") or os.getenv("OPENAI_API_KEY")
@@ -591,7 +592,7 @@ def debug_egress_ip():
 
 @app.get("/health")
 def health():
-    return {"status":"ok","service":"ai-sales-agent","version":"0.2.1","timestamp":datetime.now(timezone.utc).isoformat(),"llm_configured":llm_configured(),"commerce_configured":commerce_configured(),"domeggook_configured":domeggook_configured(),"serpapi_configured":serpapi_configured(),"naver_shopping_insight_configured":naver_api_hub_configured()}
+    return {"status":"ok","service":"ai-sales-agent","version":"0.2.2","timestamp":datetime.now(timezone.utc).isoformat(),"llm_configured":llm_configured(),"llm_providers":{"openai":bool(llm_key() and llm_model()),"gemini":bool(os.getenv("GEMINI_CHAT_API_KEY") or os.getenv("GEMINI_API_KEY"))},"commerce_configured":commerce_configured(),"domeggook_configured":domeggook_configured(),"serpapi_configured":serpapi_configured(),"naver_shopping_insight_configured":naver_api_hub_configured()}
 
 @app.get("/data/products")
 def products(size:int=Query(default=10,ge=1)):
@@ -651,10 +652,7 @@ def overview():
 
 @app.post("/agent/chat")
 def chat(req:ChatRequest):
-    key = llm_key()
-    model = llm_model()
-    if not key or not model:
-        raise HTTPException(status_code=503,detail="POSTECH_API_KEY와 POSTECH_MODEL을 Render에 설정해야 합니다.")
+    system_instruction = "과메기 온라인 판매대행 마케팅 분석 보조자. YouTube Data API를 호출하지 않는다. 유튜브 참고가 필요하면 사용자가 제공한 링크 또는 YouTube 검색 결과 링크만 제안하고, 영상 제목·조회수·좋아요·댓글을 확인했다고 주장하지 않는다. 검색하지 않은 웹사이트나 시장 데이터를 검색했다고 주장하지 않는다. 수익성은 판매가에서 원물·손질·야채·포장·배송정산·플랫폼수수료·광고비를 차감한 공헌이익으로 평가. 확인되지 않은 비용은 가정으로 분리. 게시·가격·재고·광고예산·주문 등 외부 변경은 제안만 하며 실행했다고 주장하지 말 것."
     try:
         context = {"smartStoreProducts":None,"naverAds":get_ads(),"ordersAndSales":"미연결","research":None}
         try:
@@ -662,25 +660,50 @@ def chat(req:ChatRequest):
         except Exception as exc:
             context["smartStoreProducts"] = {"error":str(exc)}
         prompt = "연결 데이터(YouTube API 미사용, 링크 기반 참고만 가능):\\n" + json.dumps(context,ensure_ascii=False,default=str) + "\\n\\n사용자 요청:\\n" + req.message
-        response = llm_chat_completion(
-            model,
-            [
-                {"role":"system","content":"과메기 온라인 판매대행 마케팅 분석 보조자. YouTube Data API를 호출하지 않는다. 유튜브 참고가 필요하면 사용자가 제공한 링크 또는 YouTube 검색 결과 링크만 제안하고, 영상 제목·조회수·좋아요·댓글을 확인했다고 주장하지 않는다. 검색하지 않은 웹사이트나 시장 데이터를 검색했다고 주장하지 않는다. 수익성은 판매가에서 원물·손질·야채·포장·배송정산·플랫폼수수료·광고비를 차감한 공헌이익으로 평가. 확인되지 않은 비용은 가정으로 분리. 게시·가격·재고·광고예산·주문 등 외부 변경은 제안만 하며 실행했다고 주장하지 말 것."},
-                {"role":"user","content":prompt}
-            ]
-        )
-        answer = ((response.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+
+        if req.provider == "gemini":
+            key = os.getenv("GEMINI_CHAT_API_KEY") or os.getenv("GEMINI_API_KEY")
+            if not key:
+                raise HTTPException(status_code=503, detail="Gemini API 키가 Render에 설정되지 않았습니다. GEMINI_API_KEY 또는 GEMINI_CHAT_API_KEY를 등록하세요.")
+            from google import genai
+            from google.genai import types
+            model = os.getenv("GEMINI_CHAT_MODEL", "gemini-3.8-flash").strip()
+            client = genai.Client(api_key=key)
+            response = client.models.generate_content(
+                model=model,
+                contents=prompt,
+                config=types.GenerateContentConfig(system_instruction=system_instruction)
+            )
+            answer = response.text or ""
+            provider = "gemini"
+        else:
+            key = llm_key()
+            model = llm_model()
+            if not key or not model:
+                raise HTTPException(status_code=503,detail="기존 OpenAI 호환 API의 POSTECH_API_KEY와 POSTECH_MODEL 설정을 확인하세요.")
+            response = llm_chat_completion(
+                model,
+                [
+                    {"role":"system","content":system_instruction},
+                    {"role":"user","content":prompt}
+                ]
+            )
+            answer = ((response.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+            provider = "openai"
+
+        if not answer.strip():
+            raise RuntimeError("EMPTY_MODEL_RESPONSE")
         history_saved = False
         try:
             save_chat_turn(req.client_id, req.conversation_id, req.message, answer, model)
             history_saved = True
         except Exception:
             history_saved = False
-        return {"reply":answer,"model":model,"conversation_id":str(req.conversation_id),"history_saved":history_saved}
+        return {"reply":answer,"model":model,"provider":provider,"conversation_id":str(req.conversation_id),"history_saved":history_saved}
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=502,detail=f"LLM 요청 실패: {type(exc).__name__}") from exc
+        raise HTTPException(status_code=502,detail=f"{req.provider.upper()} 요청 실패: {type(exc).__name__}") from exc
 
 @app.get("/agent/capabilities/legacy")
 def capabilities():
