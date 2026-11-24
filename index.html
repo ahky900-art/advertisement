@@ -30,7 +30,7 @@
 <button data-page="references"><span class="navicon"><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5z"/><path d="M14 3v5h5M8 12h8M8 16h8"/></svg></span><span>참조사항</span></button>
 <button data-page="automation"><span class="navicon"><svg viewBox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="m19 16 .8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg></span><span>콘텐츠 자동화</span></button>
 <button data-page="instagram"><span class="navicon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17.5 6.5h.01"/></svg></span><span>인스타그램</span></button>
-<button data-page="youtube"><span class="navicon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="m10 9 5 3-5 3z"/></svg></span><span>유튜브 쇼츠</span></button>
+<button data-page="youtube"><span class="navicon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="m10 9 5 3-5 3z"/></svg></span><span>유튜브 영상 조사</span></button>
 <button data-page="calendar"><span class="navicon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 9h18"/></svg></span><span>게시 일정</span></button>
 <button data-page="reports"><span class="navicon"><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5z"/><path d="M14 3v5h5M8 17v-3M12 17v-6M16 17v-4"/></svg></span><span>성과 리포트</span></button>
 <button data-page="settings"><span class="navicon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.7 1l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.7-1l-1.7.7-1.4-2.4 1.4-1.1a8 8 0 0 1 0-2l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.7-1l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.7 1l1.7-.7 1.4 2.4-1.4 1.1a8 8 0 0 1 0 2z"/></svg></span><span>API 설정</span></button>
@@ -125,13 +125,13 @@
 </section>
 <section class="page" id="automation"><div class="page-title"><div><h1>콘텐츠 자동화</h1><div class="sub">포항 바람 어린이 캐릭터를 활용한 Instagram 애니메이션 릴스 전용 기획</div></div><span class="pill">릴스 전용 · 애니메이션</span></div><div class="content-grid"><div class="content-tile"><span class="pill">다음 릴스 추천</span><h3>과메기 보관·해동, 배송받은 뒤 어떻게 할까?</h3><p>포항 바람 어린이가 택배 상자를 열고 보관 방법을 고민하는 짧은 상황극. 냉장·냉동 보관 안내와 먹기 전 해동 순서를 장면별 애니메이션으로 설명합니다.</p><b>#과메기보관 #과메기해동 #과메기택배</b></div><div class="content-tile"><span class="pill">후속 릴스</span><h3>과메기 10미 vs 20미, 누구에게 맞을까?</h3><p>어린이가 혼자 먹을지 가족과 나눌지 고민하는 선택형 스토리. 구성과 추천 인원을 비교해 구매 결정을 돕습니다.</p><b>#과메기추천 #과메기10미 #과메기20미</b></div><div class="content-tile"><span class="pill">후속 릴스</span><h3>포항 바람 어린이의 겨울 과메기 한상</h3><p>과메기와 김·미역·쪽파·마늘·초장 등 곁들임을 하나씩 골라 한 상을 완성하는 애니메이션. 실제 상품 구성과 다른 소품은 구분해 표현합니다.</p><b>#포항과메기 #과메기한상 #겨울별미</b></div></div><div class="notice">운영 방향: 이미지·카드뉴스·YouTube 쇼츠 기획은 이 탭에서 제외하고 Instagram 릴스만 관리합니다. 모든 신규 콘텐츠는 오리지널 캐릭터 애니메이션 형식으로 제작하며, 현재 이 화면은 기획 관리용으로 실제 영상 생성·자동 게시 기능은 별도 연결이 필요합니다.</div></section>
 <section class="page" id="instagram"><div class="page-title"><div><h1>인스타그램</h1><div class="sub">Instagram 유기적 콘텐츠 데이터 · 최근 30일 스냅샷 (2026.11.24 조회)</div></div><span class="status">데이터 파일 탑재</span></div><div class="ig-kpis" id="igKpis"></div><div class="notice">Instagram 콘텐츠 실적이며 스마트스토어 주문·매출 전환 데이터는 아닙니다. 좋아요·댓글은 조회 결과에서 제공되지 않아 제외합니다.</div><div class="card"><div class="card-head"><h2>게시물별 성과</h2><select class="select" id="igFilter" onchange="renderInstagram()"><option value="ALL">전체 콘텐츠</option><option value="REELS">릴스</option><option value="STATIC">이미지·캐러셀</option></select></div><div class="ig-table-wrap"><table class="table"><thead><tr><th>게시일</th><th>유형</th><th>콘텐츠</th><th>조회수</th><th>도달</th><th>평균 시청</th><th>건너뛰기율</th><th>저장</th><th>공유</th><th>원문</th></tr></thead><tbody id="igRows"></tbody></table></div></div><div class="card" style="margin-top:10px"><div class="card-head"><h2>릴스 시청 품질</h2></div><div id="igReelSummary" class="sub"></div></div></section>
-<section class="page" id="youtube"><div class="page-title"><div><h1>유튜브 쇼츠</h1><div class="sub">등록한 쇼츠 영상의 썸네일 및 공개 조회수</div></div><span class="pill">영상 링크 등록</span></div><div class="card"><div class="card-head"><h2>내 쇼츠 영상</h2><button class="chip" onclick="loadYouTubeShorts()">영상 정보 새로고침 ↻</button></div><div class="two-col" style="align-items:center"><div><a id="ytVideoLink" href="https://youtube.com/shorts/IHvEovPcb7g" target="_blank" rel="noopener"><img id="ytThumbnail" src="https://i.ytimg.com/vi/IHvEovPcb7g/hqdefault.jpg" alt="등록한 과메기 쇼츠 썸네일" style="width:100%;max-width:420px;aspect-ratio:16/9;object-fit:cover;border-radius:12px"></a></div><div><h3 id="ytVideoTitle">과메기 쇼츠 영상</h3><p class="sub" id="ytVideoChannel">등록된 영상</p><div class="kpi-value" id="ytViewCount">조회수 확인 중</div><p class="sub" id="ytVideoUpdated">YouTube 공개 통계 조회 중</p><p><a id="ytOpenLink" href="https://youtube.com/shorts/IHvEovPcb7g" target="_blank" rel="noopener">YouTube에서 영상 보기 ↗</a></p></div></div><div class="notice" id="ytDataNotice">썸네일은 영상 ID로 표시합니다. 조회수·제목은 YouTube Data API 연결 상태에 따라 자동 갱신됩니다.</div></div>
+<section class="page" id="youtube"><div class="page-title"><div><h1>유튜브 영상 조사</h1><div class="sub">일반 영상과 쇼츠를 키워드로 검색하고 공개 조회수 및 추이를 확인합니다.</div></div><span class="pill">영상 링크 등록</span></div><div class="card"><div class="card-head"><h2>등록 영상 조회수</h2><button class="chip" onclick="loadYouTubeShorts()">영상 정보 새로고침 ↻</button></div><div class="two-col" style="align-items:center"><div><a id="ytVideoLink" href="https://youtube.com/shorts/IHvEovPcb7g" target="_blank" rel="noopener"><img id="ytThumbnail" src="https://i.ytimg.com/vi/IHvEovPcb7g/hqdefault.jpg" alt="등록한 과메기 쇼츠 썸네일" style="width:100%;max-width:420px;aspect-ratio:16/9;object-fit:cover;border-radius:12px"></a></div><div><h3 id="ytVideoTitle">과메기 쇼츠 영상</h3><p class="sub" id="ytVideoChannel">등록된 영상</p><div class="kpi-value" id="ytViewCount">조회수 확인 중</div><p class="sub" id="ytVideoUpdated">YouTube 공개 통계 조회 중</p><p><a id="ytOpenLink" href="https://youtube.com/shorts/IHvEovPcb7g" target="_blank" rel="noopener">YouTube에서 영상 보기 ↗</a></p></div></div><div class="notice" id="ytDataNotice">썸네일은 영상 ID로 표시합니다. 조회수·제목은 YouTube Data API 연결 상태에 따라 자동 갱신됩니다.</div></div>
 <div class="card" style="margin-top:12px">
  <div class="card-head"><h2>YouTube 영상 키워드 검색</h2><span class="pill">YouTube Data API v3</span></div>
- <p class="sub">키워드를 입력하면 공개 영상의 제목·채널·조회수·게시일을 검색합니다. 결과는 관련도순이며, 영상 자체를 내려받거나 분석하는 기능은 아닙니다.</p>
+ <p class="sub">일반 영상과 쇼츠를 함께 검색합니다. 최신순을 기본으로 하며 조회수순·관련성순으로 바꿀 수 있습니다.</p>
  <form id="youtubeSearchForm" onsubmit="searchYouTubeVideos(event)" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
   <input id="youtubeSearchQuery" type="search" maxlength="200" value="과메기" placeholder="예: 포항 과메기, 과메기 먹는 법" required style="flex:1;min-width:220px;border:1px solid var(--line);border-radius:9px;padding:11px;font:inherit">
-  <button class="action" id="youtubeSearchButton" type="submit">유튜브 검색</button>
+  <select id="youtubeSearchOrder" aria-label="검색 정렬" style="border:1px solid var(--line);border-radius:9px;padding:10px;font:inherit"><option value="date" selected>최신순</option><option value="viewCount">조회수순</option><option value="relevance">관련성순</option></select><button class="action" id="youtubeSearchButton" type="submit">유튜브 검색</button>
  </form>
  <div id="youtubeSearchNotice" class="notice" style="margin-top:10px">검색어를 입력하고 검색 버튼을 누르세요.</div>
  <div id="youtubeSearchResults" class="content-grid" style="margin-top:12px"></div>
@@ -158,7 +158,7 @@
 <div class="footer">과메기 AI 판매대행 · 실제 API 응답과 Instagram 게시물 성과 데이터만 수치로 표시합니다. 연결되지 않은 매출·전환 데이터는 표시하지 않습니다.</div>
 </main></div>
 <script src="instagram-data.js"></script><script>
-const pageNames={home:'통합 대시보드',products:'상품 분석',references:'참조사항',ads:'광고 분석',automation:'콘텐츠 자동화',instagram:'인스타그램',youtube:'유튜브 쇼츠',calendar:'게시 일정',reports:'성과 리포트',settings:'API 설정',contentStudio:'AI 콘텐츠 제작실'};
+const pageNames={home:'통합 대시보드',products:'상품 분석',references:'참조사항',ads:'광고 분석',automation:'콘텐츠 자동화',instagram:'인스타그램',youtube:'유튜브 영상 조사',calendar:'게시 일정',reports:'성과 리포트',settings:'API 설정',contentStudio:'AI 콘텐츠 제작실'};
 function copyContentPrompt(id){const el=document.getElementById(id);if(!el)return;navigator.clipboard.writeText(el.value).then(()=>alert('프롬프트를 복사했습니다.')).catch(()=>{el.select();document.execCommand('copy');alert('프롬프트를 복사했습니다.');});}
 function previewContentFiles(event){const files=Array.from(event.target.files||[]);const grid=document.getElementById('contentPreviewGrid');if(!grid)return;if(!files.length){grid.innerHTML='<div class="content-tile"><p>아직 등록된 콘텐츠가 없습니다.</p></div>';return;}grid.innerHTML=files.map(file=>{const url=URL.createObjectURL(file);const name=String(file.name).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const media=file.type.startsWith('video/')?'<video controls style="width:100%;border-radius:8px;max-height:220px" src="'+url+'"></video>':'<img alt="'+name+'" src="'+url+'" style="width:100%;aspect-ratio:1/1;object-fit:contain;background:#f4f7fc;border-radius:8px">';return '<div class="content-tile">'+media+'<h3>'+name+'</h3><p>'+((file.size/1024/1024).toFixed(2))+' MB · 브라우저 임시 미리보기</p></div>';}).join('');}
 function go(id){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===id));if(id==='home'||id==='instagram')requestAnimationFrame(()=>{drawInstagramTrend();});}
@@ -218,13 +218,14 @@ async function searchYouTubeVideos(event){
  if(notice)notice.textContent='"'+query+'" 검색 중입니다. 잠시 기다려 주세요.';
  if(results)results.innerHTML='';
  try{
-  const url=AGENT_API_BASE_URL+'/youtube/search?q='+encodeURIComponent(query)+'&max_results=8';
+  const order=document.getElementById('youtubeSearchOrder')?.value||'date';
+  const url=AGENT_API_BASE_URL+'/youtube/search?q='+encodeURIComponent(query)+'&max_results=8&order='+encodeURIComponent(order);
   const response=await fetch(url,{headers:{'Accept':'application/json'},cache:'no-store'});
   const data=await response.json();
   if(!response.ok)throw new Error(data.detail||('HTTP '+response.status));
   const items=Array.isArray(data.items)?data.items:[];
   if(!items.length){if(notice)notice.textContent='검색 결과가 없습니다. 다른 키워드로 검색해 보세요.';return;}
-  if(notice)notice.textContent='검색 완료 · "'+query+'" · '+items.length+'개 영상 · YouTube Data API v3';
+  if(notice)notice.textContent='검색 완료 · "'+query+'" · '+items.length+'개 영상 · 정렬: '+({date:'최신순',viewCount:'조회수순',relevance:'관련성순'}[order]||order)+' · YouTube Data API v3';
   if(results)results.innerHTML=items.map(item=>{
    const id=String(item.video_id||'');
    const safeId=/^[A-Za-z0-9_-]{11}$/.test(id)?id:'';
@@ -240,6 +241,7 @@ async function searchYouTubeVideos(event){
     '<p class="sub">조회수 '+esc(views)+' · 게시일 '+esc(published)+'</p>'+
     (description?'<p class="sub">'+esc(description)+'</p>':'')+
     '<a href="'+videoUrl+'" target="_blank" rel="noopener noreferrer">YouTube 영상 보기 ↗</a>'+
+    (safeId?'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px"><button type="button" class="chip" data-yt-refresh="'+safeId+'">조회수 갱신</button><button type="button" class="chip" data-yt-history="'+safeId+'">조회수 이력</button></div><div id="yt-history-'+safeId+'" class="sub" style="margin-top:8px;white-space:pre-line"></div>':'')+
    '</article>';
   }).join('');
  }catch(error){
@@ -248,6 +250,26 @@ async function searchYouTubeVideos(event){
   if(button){button.disabled=false;button.textContent='유튜브 검색';}
  }
 }
+document.addEventListener('click',async event=>{
+ const refresh=event.target.closest('[data-yt-refresh]');
+ const history=event.target.closest('[data-yt-history]');
+ const button=refresh||history;if(!button)return;
+ const id=button.getAttribute(refresh?'data-yt-refresh':'data-yt-history');
+ const output=document.getElementById('yt-history-'+id);if(!id||!output)return;
+ button.disabled=true;
+ try{
+  if(refresh){
+   const response=await fetch(AGENT_API_BASE_URL+'/youtube/video/'+encodeURIComponent(id),{cache:'no-store'});
+   const data=await response.json();if(!response.ok)throw new Error(data.detail||('HTTP '+response.status));
+   output.textContent='조회수 갱신 완료: '+(data.view_count==null?'비공개':Number(data.view_count).toLocaleString('ko-KR')+'회')+' · '+new Date(data.updated_at||Date.now()).toLocaleString('ko-KR')+' · 이 시점의 통계를 저장했습니다.';
+  }else{
+   const response=await fetch(AGENT_API_BASE_URL+'/youtube/history/'+encodeURIComponent(id),{cache:'no-store'});
+   const data=await response.json();if(!response.ok)throw new Error(data.detail||('HTTP '+response.status));
+   output.textContent=data.count<2?'누적 기록 '+data.count+'건 · 조회수 변화량은 다른 시점에 한 번 더 갱신하면 계산됩니다.':'누적 조회수 변화 '+(data.view_change>=0?'+':'')+Number(data.view_change).toLocaleString('ko-KR')+'회\n최초 기록 '+new Date(data.tracked_since).toLocaleString('ko-KR')+'\n'+data.snapshots.map(x=>new Date(x.captured_at).toLocaleString('ko-KR')+' · '+Number(x.view_count||0).toLocaleString('ko-KR')+'회').join('\n');
+  }
+ }catch(error){output.textContent='처리 실패: '+error.message}
+ finally{button.disabled=false;}
+});
 async function loadSmartStoreProducts(){
  const state=document.getElementById('smartStoreProductState'),updated=document.getElementById('smartStoreProductUpdated'),rows=document.getElementById('smartStoreProductRows'),settingsState=document.getElementById('smartStoreSettingsState'),settingsInfo=document.getElementById('smartStoreSettingsInfo');
  if(state)state.textContent='조회 중';if(rows)rows.innerHTML='<tr><td colspan="5">스마트스토어 상품정보 조회 중입니다.</td></tr>';
@@ -320,7 +342,7 @@ renderInstagram();drawInstagramTrend();window.addEventListener('resize',drawInst
 /* Korean / English dashboard UI */
 const dashboardEnglish={
 '과메기 AI 판매대행 통합 대시보드':'Guamegi AI Sales Dashboard','과메기 AI':'Guamegi AI','판매대행':'Sales Agent',
-'통합 대시보드':'Overview','상품 분석':'Product Analysis','광고 분석':'Ad Analysis','참조사항':'References','콘텐츠 자동화':'Content Automation','인스타그램':'Instagram','유튜브 쇼츠':'YouTube Shorts','게시 일정':'Publishing Schedule','성과 리포트':'Performance Report','API 설정':'API Settings','AI 판매대행 에이전트 ↗':'AI Sales Agent ↗',
+'통합 대시보드':'Overview','상품 분석':'Product Analysis','광고 분석':'Ad Analysis','참조사항':'References','콘텐츠 자동화':'Content Automation','인스타그램':'Instagram','유튜브 영상 조사':'YouTube Video Research','게시 일정':'Publishing Schedule','성과 리포트':'Performance Report','API 설정':'API Settings','AI 판매대행 에이전트 ↗':'AI Sales Agent ↗',
 'API 연결 상태':'API Connection','네이버 API 조회 중':'Checking Naver API','최근 확인':'Last checked','조회 대기':'Waiting for data','새로고침 ↻':'Refresh ↻','겨울 제철 · 동해안':'Winter Season · East Coast','동해의 겨울을 담은':'A Taste of the East Sea','프리미엄 과메기':'Premium Guamegi','지금 바로 시작하세요!':'Get started today!',
 '실데이터 중심 보기':'Live Data View','네이버 광고 API · Instagram 게시물 성과 데이터':'Naver Ads API · Instagram post performance','실제 연동 데이터':'Connected Data','네이버 검색광고 API와 Instagram 게시물 성과 데이터 기준 · 확인되지 않은 매출·전환 수치는 표시하지 않습니다.':'Based on Naver Search Ads API and Instagram post performance. Unverified sales and conversion figures are not displayed.','전체 데이터 새로고침 ↻':'Refresh All Data ↻','오늘의 할일':"Today's Task",'실시간 검색어 및 SNS 트렌드 반영한 홍보 컨텐츠 작성':'Create promotional content based on real-time search terms and social media trends',
 '네이버 캠페인':'Naver Campaigns','서버 확인 중':'Checking server','네이버 광고그룹':'Naver Ad Groups','검색광고 API':'Search Ads API','Instagram 게시물':'Instagram Posts','Instagram 게시물 스냅샷':'Instagram post snapshot','Instagram 조회수 합계':'Total Instagram Views','스냅샷 내 게시물 합계':'Total across snapshot posts','Instagram 게시물별 도달 합계':'Total Post Reach','중복 포함 합계':'Includes overlapping reach','Instagram 상호작용':'Instagram Interactions','상호작용 합계':'Total interactions',
