@@ -143,6 +143,8 @@ def normalize_product(row):
     )
     discount_value = discount_method.get("value")
     discount_unit = str(discount_method.get("unitType") or "").upper()
+    # 할인 정책이 없거나 할인 금액이 0원인 상품도 조회 오류가 나지 않도록 기본값을 먼저 설정합니다.
+    discount_amount = 0
     policy_discounted_price = None
     if sale_price is not None and isinstance(discount_value, (int, float)) and discount_value > 0:
         if discount_unit == "WON":
@@ -157,6 +159,8 @@ def normalize_product(row):
     # 응답에 계산된 할인가가 있으면 우선 사용하고, 없으면 할인 정책으로 계산합니다.
     discounted_price = explicit_discounted_price or policy_discounted_price
     effective_price = discounted_price if discounted_price is not None and (sale_price is None or discounted_price < sale_price) else sale_price
+    if sale_price is not None and effective_price is not None and effective_price < sale_price and discount_amount == 0:
+        discount_amount = sale_price - effective_price
     discount_rate = round((1 - effective_price / sale_price) * 100, 1) if sale_price and effective_price is not None and effective_price < sale_price else 0
     product_name = str(channel.get("name") or channel.get("channelProductName") or origin.get("name") or row.get("name") or "상품명 미제공")
         # 상품별 사용자 확인 기준값: 판가, 할인 설정액, 실제 적용 판매가를 분리합니다.
