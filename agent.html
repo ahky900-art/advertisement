@@ -43,7 +43,6 @@ async function health(){try{const h=await api('/health'),c=await api('/agent/cap
 $('saveApi').onclick=async()=>{base=$('apiBase').value.trim().replace(/\/$/,'');localStorage.setItem('AGENT_API_BASE',base);await health()};$('loadCapabilities').onclick=health;
 function parseJson(id, fallback){const v=$(id).value.trim();return v?JSON.parse(v):fallback}
 const sourcingRows={keywords:[],competitors:[],suppliers:[],social:[],seasonality:[]};let domeggookItems=[],lastSerp=null;
-(function initInsightDates(){const end=new Date();const start=new Date(end);start.setFullYear(start.getFullYear()-1);const fmt=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');$('insightStart').value=fmt(start);$('insightEnd').value=fmt(end);})();
 function renderSerpResults(data){
  const root=$('serpResults');root.innerHTML='';
  const meta=document.createElement('p');
