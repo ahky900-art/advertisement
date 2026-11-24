@@ -10,28 +10,22 @@
 <div class="tabs"><button class="tab active" data-view="chat">AI 지시</button><button class="tab" data-view="sourcing">소싱 분석</button><button class="tab" data-view="youtube">유튜브 분석</button><button class="tab" data-view="pricing">수익성 분석</button><button class="tab" data-view="cs">CS 초안</button><button class="tab" data-view="approvals">승인함</button><button class="tab" data-view="settings">연결 상태</button></div>
 <section class="view active" id="view-chat"><div class="panel"><h2>AI 업무 지시</h2><div class="desc">연결된 데이터를 근거로 질의합니다. 연결되지 않은 데이터는 추정하지 않습니다.</div><div class="chat" id="chat"><div class="msg bot">안녕하세요. 과메기 판매대행 에이전트입니다. 광고·상품·원가·마케팅 전략을 질문할 수 있습니다. 외부 변경은 제안만 하며 자동 실행하지 않습니다.</div></div><div class="composer"><textarea id="prompt" placeholder="예: 최근 광고성과와 상품별 수익성을 분석해줘."></textarea><button class="btn primary" id="sendBtn">전송</button></div></div></section>
 <section class="view" id="view-sourcing"><div class="panel"><h2>소싱·시장 분석</h2><div class="desc">검색량·트렌드·경쟁상품·SNS 관측 데이터를 입력하면 출처를 구분해 정리합니다. 실제 경쟁사 매출로 간주하지 않습니다.</div><div class="formgrid"><div class="field"><label>주요 구매 고객 (선택)</label><input id="srcAudience" placeholder="예: 과메기를 처음 구매하는 30~50대"></div><div class="field wide"><label>확인된 상품 강점·사실만 입력</label><textarea id="srcFacts" placeholder="예: 완전손질 여부, 중량, 구성품, 원산지, 배송 조건 등 실제 확인된 정보만 입력"></textarea></div></div><div class="actions"><button class="btn" id="makeHooks">광고 후킹 문구 추천</button><button class="btn" id="makeIdeas">쇼츠·콘텐츠 소재 추천</button></div><div class="result" id="copyResult">상품의 검증된 특징과 타깃을 입력하면 후킹 문구와 콘텐츠 소재를 제안합니다. 확인되지 않은 원산지·품질·효능·할인 문구는 만들지 않습니다.</div><div class="desc" style="margin-top:8px">추천 문구는 초안입니다. 실제 상품정보와 일치하는지 검토한 후 사용하세요.</div><div class="formgrid"><div class="field"><label>분석 상품</label><input id="srcProduct" value="과메기"></div><div class="field"><label>주요 분석 목적</label><select id="srcGoal"><option value="구매전환 및 판매기회 발굴">구매전환·판매기회 발굴</option><option value="신규 키워드 및 검색수요 파악">신규 키워드·검색수요 파악</option><option value="경쟁상품 가격·구성 비교">경쟁상품 가격·구성 비교</option><option value="SNS 콘텐츠 기회 발굴">SNS 콘텐츠 기회 발굴</option></select></div><div class="field"><label>분석 대상 시즌</label><select id="srcSeason"><option value="현재 시즌">현재 시즌</option><option value="겨울">겨울</option><option value="봄">봄</option><option value="여름">여름</option><option value="가을">가을</option><option value="연중">연중</option></select></div></div>
-<div class="approval" style="margin-top:12px"><b>네이버 쇼핑인사이트 수요 분석</b><p>네이버 쇼핑 영역의 키워드별 상대적 클릭 추이를 조회합니다. 경쟁상품 가격이나 실제 검색량을 제공하는 기능은 아닙니다.</p>
+<div class="approval" style="margin-top:12px"><b>SerpApi 경쟁상품·가격 조사</b><p>Google Shopping 한국 노출 상품을 조회합니다. 실제 판매량이나 네이버 스마트스토어 전체 상품 목록은 아닙니다.</p>
 <div class="formgrid">
-<div class="field wide"><label>분석 키워드 (쉼표로 구분, 최대 10개)</label><input id="insightKeywords" value="과메기, 포항 과메기, 과메기 야채세트, 과메기 손질, 과메기 택배, 과메기 도시락"></div>
-<div class="field"><label>쇼핑 카테고리 코드</label><input id="insightCategory" value="50000006" placeholder="네이버 쇼핑 cat_id"></div>
-<div class="field"><label>조회 단위</label><select id="insightUnit"><option value="week" selected>주간</option><option value="month">월간</option><option value="date">일간</option></select></div>
-<div class="field"><label>시작일</label><input id="insightStart" type="date"></div>
-<div class="field"><label>종료일</label><input id="insightEnd" type="date"></div>
-<div class="field"><label>기기</label><select id="insightDevice"><option value="">전체</option><option value="mo">모바일</option><option value="pc">PC</option></select></div>
-<div class="field"><label>성별</label><select id="insightGender"><option value="">전체</option><option value="f">여성</option><option value="m">남성</option></select></div>
-<div class="field"><label>연령대</label><select id="insightAge"><option value="">전체</option><option value="10">10대</option><option value="20">20대</option><option value="30">30대</option><option value="40">40대</option><option value="50">50대</option><option value="60">60대 이상</option></select></div>
+<div class="field wide"><label>검색 키워드 (쉼표로 구분, 최대 8개)</label><input id="serpKeywords" value="과메기, 포항 과메기, 과메기 야채세트, 과메기 손질, 과메기 택배, 과메기 도시락"></div>
+<div class="field"><label>키워드별 최대 결과</label><select id="serpMaxResults"><option value="10">10개</option><option value="20" selected>20개</option><option value="40">40개</option></select></div>
 </div>
-<div class="actions"><button class="btn primary" id="runInsight">네이버 수요 분석 조회</button></div>
-<div class="result" id="insightStatus">NAVER API HUB 키 등록 후 조회할 수 있습니다.</div>
-<div class="result" id="insightResults">조회 결과가 여기에 표시됩니다.</div></div>
-<div class="approval" style="margin-top:12px"><b>수요 기반 마케팅 인사이트</b><p>실제 판매량과 구분하여 상대적 클릭 추이를 해석하고, 상품·광고·콘텐츠 기회를 도출합니다.</p><div class="result" id="insightRecommendations">네이버 데이터를 조회하면 추천 분석을 표시합니다.</div></div>
+<div class="actions"><button class="btn primary" id="runSerpSearch">SerpApi 경쟁상품 조회</button></div>
+<div class="result" id="serpStatus">SERPAPI_API_KEY 연결 확인 후 조회할 수 있습니다.</div>
+<div class="result" id="serpResults">검색 결과가 여기에 표시됩니다.</div></div>
+<div class="approval" style="margin-top:12px"><b>수요·경쟁 기반 마케팅 인사이트</b><p>경쟁상품 가격·리뷰와 키워드별 검색 결과를 구분하여 분석합니다. 실제 판매량·시장점유율로 해석하지 않습니다.</p><div class="result" id="insightRecommendations">SerpApi 조회 후 추천 분석을 표시합니다.</div></div>
 <div hidden aria-hidden="true">
 <input id="kwName"><input id="kwTrend"><input id="kwVolume"><select id="kwSource"></select><button id="addKeyword"></button><pre id="keywordRows"></pre>
 <input id="compName"><input id="compPrice"><input id="compReviews"><select id="compType"></select><select id="compSource"></select><button id="addCompetitor"></button><pre id="competitorRows"></pre>
 <input id="socialObservation"><input id="socialSource"><select id="socialType"></select><select id="socialPlatform"></select><button id="addSocial"></button><pre id="socialRows"></pre><pre id="supplierRows"></pre>
 <input id="domeggookKeyword" value="과메기"><button id="searchDomeggook"></button><button id="addDomeggookToAnalysis"></button><div id="domeggookResults"></div><button id="clearSourcing"></button>
 </div>
-<div class="warn">입력 데이터는 사용자가 직접 관측·확인한 값입니다. 이 화면은 현재 입력값을 분석 API로 전달하며, 네이버 검색량·경쟁사 데이터·SNS 지표를 자동 수집하는 기능은 아닙니다. 출처가 없는 값은 실측 데이터로 표시하지 마세요.</div>
+<div class="warn">SerpApi는 Google Shopping 한국 노출 상품의 가격·판매처·평점·리뷰를 관측합니다. 실제 판매량·매출·네이버 전체 상품 목록은 제공하지 않습니다. 도매매 공급가는 소매 경쟁상품 가격과 별도 지표이며, 중량·손질 상태·구성품·배송비가 같은 상품끼리 비교하세요.</div>
 <div class="actions"><button class="btn primary" id="runSourcing">시장 분석 실행</button><button class="btn" id="approveSourcing" disabled>분석 결과 승인요청 등록</button><button class="btn" id="clearSourcing">입력 초기화</button></div><div class="result" id="sourcingResult">분석 결과가 여기에 표시됩니다.</div></div></section>
 <section class="view" id="view-youtube"><div class="panel"><h2>유튜브 참고 링크</h2><div class="desc">YouTube Data API나 결제·인증 설정 없이 영상 링크만 확인합니다. AI가 콘텐츠 아이디어를 제안할 때도 실제 조회 통계를 가져왔다고 표시하지 않습니다.</div><div class="field"><label>유튜브 영상 또는 검색 링크</label><input id="ytUrl" value="https://youtube.com/shorts/IHvEovPcb7g?si=CG1KiKI0M-2nzIvG"></div><div class="actions"><a class="btn primary" id="ytOpenLink" href="https://youtube.com/shorts/IHvEovPcb7g?si=CG1KiKI0M-2nzIvG" target="_blank" rel="noopener">유튜브 링크 열기</a><button class="btn" id="ytUpdateLink">입력한 링크 적용</button></div><div class="result" id="ytResult">등록된 참고 링크: https://youtube.com/shorts/IHvEovPcb7g?si=CG1KiKI0M-2nzIvG</div></div></section><section class="view" id="view-pricing"><div class="panel"><h2>가격·수익성 분석</h2><div class="desc">실제 비용을 입력해 손익분기 가격과 목표 공헌이익률 가격을 계산합니다. 빈칸을 임의의 실제 원가로 간주하지 마세요.</div><div class="formgrid"><div class="field"><label>상품 ID</label><input id="pId" value="guamegi-10mi"></div><div class="field"><label>현재 판매가 (원)</label><input id="pPrice" type="number" value="29500"></div><div class="field"><label>원물 원가 (원)</label><input id="pRaw" type="number" value="0"></div><div class="field"><label>손질 인건비 (원)</label><input id="pLabor" type="number" value="0"></div><div class="field"><label>야채 원가 (원)</label><input id="pVeg" type="number" value="0"></div><div class="field"><label>포장비 (원)</label><input id="pPack" type="number" value="0"></div><div class="field"><label>판매자 부담 배송비 (원)</label><input id="pShip" type="number" value="0"></div><div class="field"><label>플랫폼 수수료율 (%)</label><input id="pFee" type="number" value="0" step="0.1"></div><div class="field"><label>주문당 광고비 (원)</label><input id="pAd" type="number" value="0"></div><div class="field"><label>목표 공헌이익률 (%)</label><input id="pMargin" type="number" value="10"></div><div class="field"><label>경쟁상품 가격 (원, 선택)</label><input id="pComp" type="number"></div><div class="field"><label>재고 수량 (선택)</label><input id="pStock" type="number"></div></div><div class="actions"><button class="btn primary" id="runPricing">수익성 계산</button><button class="btn" id="approvePricing" disabled>가격 변경안 승인요청</button></div><div class="result" id="pricingResult">계산 결과가 여기에 표시됩니다.</div></div></section>
 <section class="view" id="view-cs"><div class="panel"><h2>고객응대 초안</h2><div class="desc">검증된 상품정보와 승인된 응대 가이드만 참고합니다. 답변은 초안이며 자동 발송하지 않습니다.</div><div class="formgrid"><div class="field"><label>채널</label><select id="csChannel"><option value="naver_smartstore">네이버 스마트스토어</option><option value="instagram">인스타그램</option></select></div><div class="field wide"><label>고객 문의</label><textarea id="csMessage" placeholder="고객 문의 내용을 입력하세요."></textarea></div><div class="field wide"><label>검증된 상품정보 JSON</label><textarea id="csFacts" placeholder='{"상품":"과메기 10미","손질상태":"완전손질","배송":"확인된 배송정책"}'></textarea></div><div class="field wide"><label>승인된 응대 가이드 (한 줄씩)</label><textarea id="csGuides" placeholder="확인된 사실만 안내\n환불·식품안전 문의는 담당자 확인"></textarea></div></div><div class="actions"><button class="btn primary" id="runCS">답변 초안 생성</button></div><div class="result" id="csResult">초안이 여기에 표시됩니다.</div></div></section>
@@ -48,41 +42,53 @@ document.querySelectorAll('[data-view]').forEach(x=>x.addEventListener('click',(
 async function health(){try{const h=await api('/health'),c=await api('/agent/capabilities');$('connectionText').textContent='● API 연결 정상';$('statusPill').textContent='서버 정상';$('statusPill').style.color='#119b70';$('mServer').textContent='정상';$('mChat').textContent=c.chat?'활성':'키 미설정';$('mStore').textContent=c.connected_channels?.naver_smartstore_products?'연결':'미연결';show('capResult',{health:h,capabilities:c});return c}catch(e){$('connectionText').textContent='● 서버 미연결';$('statusPill').textContent='연결 실패';$('mServer').textContent='오류';show('capResult',{error:e.message});return null}}
 $('saveApi').onclick=async()=>{base=$('apiBase').value.trim().replace(/\/$/,'');localStorage.setItem('AGENT_API_BASE',base);await health()};$('loadCapabilities').onclick=health;
 function parseJson(id, fallback){const v=$(id).value.trim();return v?JSON.parse(v):fallback}
-const sourcingRows={keywords:[],competitors:[],suppliers:[],social:[],seasonality:[]};let domeggookItems=[],lastInsight=null;
+const sourcingRows={keywords:[],competitors:[],suppliers:[],social:[],seasonality:[]};let domeggookItems=[],lastSerp=null;
 (function initInsightDates(){const end=new Date();const start=new Date(end);start.setFullYear(start.getFullYear()-1);const fmt=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');$('insightStart').value=fmt(start);$('insightEnd').value=fmt(end);})();
-function renderInsight(data){
- const root=$('insightResults');root.innerHTML='';
- const meta=document.createElement('p');meta.textContent='출처: NAVER API HUB 쇼핑인사이트 | '+data.startDate+' ~ '+data.endDate+' | '+({date:'일간',week:'주간',month:'월간'}[data.timeUnit]||data.timeUnit)+' | 지표: 상대적 쇼핑 클릭 비율(최대 100)';root.appendChild(meta);
- const results=data.results||[];
- if(!results.length){root.appendChild(document.createTextNode('조회된 키워드 데이터가 없습니다. 카테고리 코드를 확인하세요.'));return;}
- results.forEach(item=>{
-  const block=document.createElement('div');block.className='approval';block.style.marginTop='8px';
-  const heading=document.createElement('b');heading.textContent=item.title||((item.keywords||[]).join(', '))||'키워드';
-  block.appendChild(heading);
-  const rows=item.data||[];const max=Math.max(1,...rows.map(x=>Number(x.ratio)||0));
-  rows.forEach(point=>{
-   const line=document.createElement('div');line.style.margin='7px 0';
-   const label=document.createElement('div');label.style.display='flex';label.style.justifyContent='space-between';label.style.fontSize='12px';label.textContent=(point.period||'')+' · '+Number(point.ratio||0).toFixed(1);
-   const track=document.createElement('div');track.style.height='7px';track.style.background='#e8edf2';track.style.borderRadius='6px';
-   const bar=document.createElement('div');bar.style.height='7px';bar.style.width=(Math.max(0,Number(point.ratio)||0)/max*100)+'%';bar.style.background='#168a70';bar.style.borderRadius='6px';track.appendChild(bar);line.append(label,track);block.appendChild(line);
-  });
-  root.appendChild(block);
+function renderSerpResults(data){
+ const root=$('serpResults');root.innerHTML='';
+ const meta=document.createElement('p');
+ const ps=data.price_summary||{};
+ meta.textContent='출처: Google Shopping via SerpApi · '+(data.market||'KR')+' · 조회 '+(data.count||0)+'건 · 가격 확인 '+(data.priced_count||0)+'건 · 최저 '+(ps.min==null?'미제공':Number(ps.min).toLocaleString()+'원')+' · 중간값 '+(ps.median==null?'미제공':Number(ps.median).toLocaleString()+'원')+' · 최고 '+(ps.max==null?'미제공':Number(ps.max).toLocaleString()+'원');
+ root.appendChild(meta);
+ (data.query_results||[]).forEach(q=>{const p=document.createElement('p');p.textContent='검색어: '+q.keyword+' · '+q.result_count+'건';root.appendChild(p)});
+ const items=data.items||[];
+ if(!items.length){root.appendChild(document.createTextNode('검색 결과가 없습니다. 키워드를 바꾸어 다시 조회하세요.'));return;}
+ items.forEach(item=>{
+  const card=document.createElement('div');card.className='approval';card.style.marginTop='8px';
+  const title=document.createElement('b');title.textContent=item.name||'상품명 미제공';
+  const details=document.createElement('p');
+  details.textContent='가격: '+(item.price==null?'미제공':Number(item.price).toLocaleString()+'원')+' | 판매처: '+(item.supplier||'미제공')+' | 평점: '+(item.rating??'미제공')+' | 리뷰: '+(item.review_count??'미제공')+' | 배송: '+(item.delivery||'미제공');
+  const query=document.createElement('p');query.textContent='검색어: '+(item.query||'')+' | 출처: '+item.source;
+  card.append(title,details,query);
+  if(item.url){const link=document.createElement('a');link.href=item.url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='경쟁상품 보기';card.appendChild(link);}
+  root.appendChild(card);
  });
+ (data.limitations||[]).forEach(note=>{const p=document.createElement('p');p.textContent='주의: '+note;root.appendChild(p)});
 }
-$('runInsight').onclick=async()=>{
- const keywords=[...new Set($('insightKeywords').value.split(',').map(x=>x.trim()).filter(Boolean))];
- if(!keywords.length){show('insightStatus','키워드를 한 개 이상 입력하세요.');return;}
- if(keywords.length>10){show('insightStatus','키워드는 최대 10개까지 입력할 수 있습니다.');return;}
- const category=$('insightCategory').value.trim();if(!category){show('insightStatus','네이버 쇼핑 카테고리 코드를 입력하세요.');return;}
- $('runInsight').disabled=true;show('insightStatus','네이버 쇼핑인사이트 조회 중...');
+$('runSerpSearch').onclick=async()=>{
+ const keywords=[...new Set($('serpKeywords').value.split(',').map(x=>x.trim()).filter(Boolean))];
+ if(!keywords.length){show('serpStatus','검색 키워드를 한 개 이상 입력하세요.');return;}
+ if(keywords.length>8){show('serpStatus','키워드는 최대 8개까지 입력할 수 있습니다.');return;}
+ $('runSerpSearch').disabled=true;show('serpStatus','SerpApi Google Shopping 조회 중...');
  try{
-  lastInsight=await api('/data/naver/shopping-insight',{method:'POST',body:JSON.stringify({keywords,category,start_date:$('insightStart').value,end_date:$('insightEnd').value,time_unit:$('insightUnit').value,device:$('insightDevice').value,gender:$('insightGender').value,ages:$('insightAge').value?[$('insightAge').value]:[]})});
-  renderInsight(lastInsight);show('insightStatus','조회 성공 · '+lastInsight.count+'개 키워드 결과 · '+lastInsight.updatedAt);
-  const summaries=(lastInsight.results||[]).map(item=>{const points=item.data||[];const peak=points.reduce((a,b)=>(Number(b.ratio)||0)>(Number(a.ratio)||0)?b:a,{});return {keyword:item.title||((item.keywords||[]).join(', ')),trend_score:peak.ratio??0,source:'NAVER API HUB Shopping Insight',peak_period:peak.period||''};});
-  sourcingRows.keywords=summaries;drawSourcingRows();
-  show('insightRecommendations',summaries.length?summaries.map(x=>x.keyword+' | 관측 최고 상대 클릭 비율 '+x.trend_score+' | '+x.peak_period).join('\\n')+'\\n\\n주의: 최고값만으로 판매량을 예측할 수 없습니다. 상승 구간과 자사 주문·광고 데이터를 함께 비교하세요.':'결과 없음');
- }catch(e){show('insightStatus','네이버 쇼핑인사이트 조회 실패: '+e.message);}
- finally{$('runInsight').disabled=false;}
+  lastSerp=await api('/data/serpapi/google-shopping',{method:'POST',body:JSON.stringify({keywords,max_results:Number($('serpMaxResults').value||20)})});
+  const items=lastSerp.items||[];
+  const mapped=items.map(x=>({...x,product_type:'Google Shopping 경쟁상품',source:x.source||'Google Shopping · SerpApi'}));
+  const known=new Set(sourcingRows.competitors.map(x=>String(x.url||x.name)));
+  const fresh=mapped.filter(x=>!known.has(String(x.url||x.name)));
+  sourcingRows.competitors.push(...fresh);drawSourcingRows();
+  renderSerpResults(lastSerp);
+  show('serpStatus','조회 성공 · '+items.length+'건 · 소싱 분석에 신규 경쟁상품 '+fresh.length+'건 추가 · '+lastSerp.updated_at);
+  const priced=items.filter(x=>typeof x.price==='number').sort((a,b)=>a.price-b.price);
+  const summary=[
+   '관측 경쟁상품 '+items.length+'건, 가격 확인 '+priced.length+'건',
+   priced.length?'가격 범위 '+priced[0].price.toLocaleString()+'원 ~ '+priced[priced.length-1].price.toLocaleString()+'원':'가격 확인 가능한 결과가 없습니다.',
+   '리뷰 수와 평점은 판매량이 아닌 참고 지표입니다.',
+   '상품 중량·손질 수준·야채 구성·배송비를 확인한 뒤 자사 상품과 비교하세요.'
+  ];
+  show('insightRecommendations',summary.join('\\n'));
+ }catch(e){show('serpStatus','SerpApi 조회 실패: '+e.message);}
+ finally{$('runSerpSearch').disabled=false;}
 };
 function drawSourcingRows(){const draw=(id,arr,fmt)=>$(id).textContent=arr.length?arr.map((x,i)=>(i+1)+'. '+fmt(x)).join('\\n'):'등록된 항목이 없습니다.';draw('keywordRows',sourcingRows.keywords,x=>x.keyword+' | 트렌드 '+(x.trend_score??'미입력')+' | 검색량 '+(x.search_volume??'미입력')+' | '+x.source);draw('competitorRows',sourcingRows.competitors,x=>x.name+' | '+(x.price??'가격 미입력')+'원 | 리뷰 '+(x.review_count??'미입력')+' | '+x.product_type+' | '+x.source);draw('socialRows',[...sourcingRows.social,...sourcingRows.seasonality],x=>(x.type||'SNS')+' | '+x.platform+' | '+x.observation+' | '+x.source);draw('supplierRows',sourcingRows.suppliers,x=>x.name+' | 공급가 '+(x.price??'미제공')+'원 | MOQ '+(x.min_order_qty??'미제공')+' | 배송비 '+(x.shipping_fee??'미제공')+'원 | '+(x.supplier||'판매자 미제공'));}
 function sourceInputs(){return {product:$('srcProduct').value.trim()||'상품',audience:$('srcAudience').value.trim()||'온라인 구매 고객',facts:$('srcFacts').value.trim(),keywords:sourcingRows.keywords};}
@@ -134,7 +140,7 @@ $('addDomeggookToAnalysis').onclick=()=>{
  show('domeggookResults','도매매 공급상품 '+fresh.length+'건을 소싱 분석 데이터에 추가했습니다. 기존 '+(domeggookItems.length-fresh.length)+'건은 중복으로 제외했습니다.');
  $('addDomeggookToAnalysis').disabled=true;
 };
-$('runSourcing').onclick=async()=>{try{if(!lastInsight||!sourcingRows.keywords.length){throw new Error('먼저 네이버 쇼핑인사이트 조회를 실행하세요.')}lastSourcing=await api('/agent/sourcing/analyze',{method:'POST',body:JSON.stringify({product_name:$('srcProduct').value.trim()||'과메기',keyword_metrics:sourcingRows.keywords,competitor_observations:[],supplier_observations:[],social_observations:[],seasonality_observations:[]})});show('sourcingResult',{analysis_goal:$('srcGoal').value,season:$('srcSeason').value,source:'NAVER API HUB Shopping Insight',result:lastSourcing});$('approveSourcing').disabled=false}catch(e){show('sourcingResult','오류: '+e.message)}};
+$('runSourcing').onclick=async()=>{try{if(!sourcingRows.keywords.length&&!sourcingRows.competitors.length&&!sourcingRows.suppliers.length&&!sourcingRows.social.length&&!sourcingRows.seasonality.length){throw new Error('먼저 SerpApi 경쟁상품 조회 또는 도매매 검색 등 관측 데이터를 확보하세요.')}lastSourcing=await api('/agent/sourcing/analyze',{method:'POST',body:JSON.stringify({product_name:$('srcProduct').value.trim()||'과메기',analysis_goal:$('srcGoal').value,season:$('srcSeason').value,keyword_metrics:sourcingRows.keywords,competitor_observations:sourcingRows.competitors,supplier_observations:sourcingRows.suppliers,social_observations:sourcingRows.social,seasonality_observations:sourcingRows.seasonality})});show('sourcingResult',{analysis_goal:$('srcGoal').value,season:$('srcSeason').value,source:{competitors:lastSerp?'Google Shopping · SerpApi':'사용자 관측',suppliers:'도매매 Open API'},result:lastSourcing});$('approveSourcing').disabled=false}catch(e){show('sourcingResult','오류: '+e.message)}};
 $('approveSourcing').onclick=async()=>{try{const d=await api('/agent/approvals',{method:'POST',body:JSON.stringify({agent_type:'sourcing',channel:'naver_smartstore',action_type:'review_marketing_recommendations',payload:lastSourcing,rationale:'시장 분석 결과에 대한 사용자 검토 요청'})});show('sourcingResult',{analysis:lastSourcing,approval:d})}catch(e){show('sourcingResult','오류: '+e.message)}};
 $('runPricing').onclick=async()=>{try{const n=id=>Number($(id).value||0),v={product_id:$('pId').value,sale_price:n('pPrice'),raw_material_cost:n('pRaw'),labor_cost:n('pLabor'),vegetable_cost:n('pVeg'),packaging_cost:n('pPack'),shipping_cost:n('pShip'),platform_fee_rate:n('pFee')/100,ad_cost_per_order:n('pAd'),target_margin_rate:n('pMargin')/100};if($('pComp').value)v.competitor_price=n('pComp');if($('pStock').value)v.stock_quantity=n('pStock');lastPricing=await api('/agent/pricing/analyze',{method:'POST',body:JSON.stringify(v)});show('pricingResult',lastPricing);$('approvePricing').disabled=false}catch(e){show('pricingResult','오류: '+e.message)}};
 $('approvePricing').onclick=async()=>{try{const d=await api('/agent/approvals',{method:'POST',body:JSON.stringify({agent_type:'pricing',channel:'naver_smartstore',action_type:'review_price_change',payload:lastPricing,rationale:'수익성 분석에 따른 가격 조정 검토 요청. 실제 가격은 변경되지 않음.'})});show('pricingResult',{analysis:lastPricing,approval:d})}catch(e){show('pricingResult','오류: '+e.message)}};
