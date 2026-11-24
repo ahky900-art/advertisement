@@ -375,7 +375,7 @@ def naver_api_hub_configured():
     return bool(os.getenv("NAVER_API_HUB_CLIENT_ID", "").strip() and os.getenv("NAVER_API_HUB_CLIENT_SECRET", "").strip())
 
 
-def get_naver_shopping_insight(keywords, category, start_date, end_date, time_unit="week"):
+def get_naver_shopping_insight(keywords, category, start_date, end_date, time_unit="week", device="", gender="", ages=None):
     client_id = os.getenv("NAVER_API_HUB_CLIENT_ID", "").strip()
     client_secret = os.getenv("NAVER_API_HUB_CLIENT_SECRET", "").strip()
     if not client_id or not client_secret:
@@ -411,6 +411,14 @@ def get_naver_shopping_insight(keywords, category, start_date, end_date, time_un
             "category": str(category).strip(),
             "keyword": [{"name": word, "param": [word]} for word in chunk]
         }
+        if device in ("pc", "mo"):
+            body["device"] = device
+        if gender in ("m", "f"):
+            body["gender"] = gender
+        if ages:
+            valid_ages = [str(x) for x in ages if str(x) in ("10", "20", "30", "40", "50", "60")]
+            if valid_ages:
+                body["ages"] = valid_ages
         response = requests.post(
             "https://naverapihub.apigw.ntruss.com/shopping/v1/category/keywords",
             headers=headers, json=body, timeout=30
@@ -495,13 +503,16 @@ class ShoppingInsightRequest(BaseModel):
     start_date: str
     end_date: str
     time_unit: str = "week"
+    device: str = ""
+    gender: str = ""
+    ages: list[str] = Field(default_factory=list)
 
 
 @app.post("/data/naver/shopping-insight")
 def naver_shopping_insight(req: ShoppingInsightRequest):
     try:
         keywords = list(dict.fromkeys([str(x).strip() for x in req.keywords if str(x).strip()]))
-        return get_naver_shopping_insight(keywords, req.category, req.start_date, req.end_date, req.time_unit)
+        return get_naver_shopping_insight(keywords, req.category, req.start_date, req.end_date, req.time_unit, req.device, req.gender, req.ages)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
