@@ -370,6 +370,73 @@ def search_domeggook_products(keyword: str, page: int = 1, size: int = 50):
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
 
+
+def naver_api_hub_configured():
+    return bool(os.getenv("NAVER_API_HUB_CLIENT_ID", "").strip() and os.getenv("NAVER_API_HUB_CLIENT_SECRET", "").strip())
+
+
+def get_naver_shopping_insight(keywords, category, start_date, end_date, time_unit="week"):
+    client_id = os.getenv("NAVER_API_HUB_CLIENT_ID", "").strip()
+    client_secret = os.getenv("NAVER_API_HUB_CLIENT_SECRET", "").strip()
+    if not client_id or not client_secret:
+        raise RuntimeError("Render 환경변수 NAVER_API_HUB_CLIENT_ID와 NAVER_API_HUB_CLIENT_SECRET를 등록해야 합니다.")
+    if not keywords:
+        raise RuntimeError("비교할 키워드를 1개 이상 입력해야 합니다.")
+    if len(keywords) > 10:
+        raise RuntimeError("한 번에 최대 10개 키워드까지 비교할 수 있습니다.")
+    if time_unit not in ("date", "week", "month"):
+        raise RuntimeError("time_unit은 date, week, month 중 하나여야 합니다.")
+    try:
+        datetime.strptime(start_date, "%Y-%m-%d")
+        datetime.strptime(end_date, "%Y-%m-%d")
+    except ValueError as exc:
+        raise RuntimeError("조회 날짜는 YYYY-MM-DD 형식이어야 합니다.") from exc
+    if start_date > end_date:
+        raise RuntimeError("시작일은 종료일보다 늦을 수 없습니다.")
+    if not str(category).strip():
+        raise RuntimeError("네이버 쇼핑 카테고리 코드가 필요합니다.")
+
+    headers = {
+        "X-NCP-APIGW-API-KEY-ID": client_id,
+        "X-NCP-APIGW-API-KEY": client_secret,
+        "Content-Type": "application/json"
+    }
+    combined = []
+    for offset in range(0, len(keywords), 5):
+        chunk = keywords[offset:offset + 5]
+        body = {
+            "startDate": start_date,
+            "endDate": end_date,
+            "timeUnit": time_unit,
+            "category": str(category).strip(),
+            "keyword": [{"name": word, "param": [word]} for word in chunk]
+        }
+        response = requests.post(
+            "https://naverapihub.apigw.ntruss.com/shopping/v1/category/keywords",
+            headers=headers, json=body, timeout=30
+        )
+        if not response.ok:
+            try:
+                detail = response.json()
+            except Exception:
+                detail = response.text[:300]
+            raise RuntimeError(f"NAVER API HUB HTTP {response.status_code}: {str(detail)[:500]}")
+        data = response.json()
+        combined.extend(data.get("results") or [])
+
+    return {
+        "configured": True,
+        "source": "NAVER API HUB · Shopping Insight",
+        "category": str(category).strip(),
+        "startDate": start_date,
+        "endDate": end_date,
+        "timeUnit": time_unit,
+        "metric": "상대적 쇼핑 검색 클릭 비율(최대값=100)",
+        "count": len(combined),
+        "results": combined,
+        "updatedAt": datetime.now(timezone.utc).isoformat()
+    }
+
 def get_ads():
     try:
         health = requests.get(ADS+"/api/health", timeout=12).json()
@@ -401,7 +468,7 @@ def debug_egress_ip():
 
 @app.get("/health")
 def health():
-    return {"status":"ok","service":"ai-sales-agent","version":"0.2.1","timestamp":datetime.now(timezone.utc).isoformat(),"llm_configured":llm_configured(),"commerce_configured":commerce_configured(),"domeggook_configured":domeggook_configured()}
+    return {"status":"ok","service":"ai-sales-agent","version":"0.2.1","timestamp":datetime.now(timezone.utc).isoformat(),"llm_configured":llm_configured(),"commerce_configured":commerce_configured(),"domeggook_configured":domeggook_configured(),"naver_shopping_insight_configured":naver_api_hub_configured()}
 
 @app.get("/data/products")
 def products(size:int=Query(default=10,ge=1)):
@@ -418,6 +485,23 @@ def domeggook_search(
 ):
     try:
         return search_domeggook_products(kw, page, size)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+class ShoppingInsightRequest(BaseModel):
+    keywords: list[str] = Field(min_length=1, max_length=10)
+    category: str = Field(default="50000008", min_length=1, max_length=30)
+    start_date: str
+    end_date: str
+    time_unit: str = "week"
+
+
+@app.post("/data/naver/shopping-insight")
+def naver_shopping_insight(req: ShoppingInsightRequest):
+    try:
+        keywords = list(dict.fromkeys([str(x).strip() for x in req.keywords if str(x).strip()]))
+        return get_naver_shopping_insight(keywords, req.category, req.start_date, req.end_date, req.time_unit)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
