@@ -17,7 +17,8 @@
 <footer>AI SALES AGENT · 기존 대시보드와 별도 파일/서비스 · 분석 결과에는 출처와 기준 시각을 표시합니다.</footer></main></div>
 <script>
 const $=id=>document.getElementById(id);let base=localStorage.getItem('AGENT_API_BASE')||'https://guamegi-ai-sales-agent-api.onrender.com';$('apiBase').value=base;let lastSourcing=null,lastPricing=null;
-async function api(path,opts={}){const r=await fetch(base.replace(/\/$/, '')+path,{...opts,headers:{'Content-Type':'application/json',...(opts.headers||{})}});let d={};try{d=await r.json()}catch{}if(!r.ok)throw new Error(d.detail||'HTTP '+r.status);return d}
+function formatApiError(detail,status){if(Array.isArray(detail)){return detail.map((x,i)=>{if(x&&typeof x==='object'){const loc=Array.isArray(x.loc)?x.loc.join(' → '):'';return (i+1)+'. '+(loc?loc+': ':'')+(x.msg||x.message||JSON.stringify(x));}return (i+1)+'. '+String(x)}).join('\n')}if(detail&&typeof detail==='object')return JSON.stringify(detail,null,2);return detail?String(detail):'HTTP '+status;}
+async function api(path,opts={}){const r=await fetch(base.replace(/\/$/, '')+path,{...opts,headers:{'Content-Type':'application/json',...(opts.headers||{})}});let d={};try{d=await r.json()}catch{}if(!r.ok)throw new Error(formatApiError(d.detail,r.status));return d}
 function show(id,d){$(id).textContent=typeof d==='string'?d:JSON.stringify(d,null,2)}
 function setTab(v){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id==='view-'+v));document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===v));if(v==='approvals')loadApprovals()}
 document.querySelectorAll('[data-view]').forEach(x=>x.addEventListener('click',()=>setTab(x.dataset.view)));
