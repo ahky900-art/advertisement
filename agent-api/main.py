@@ -491,7 +491,7 @@ def domeggook_search(
 
 class ShoppingInsightRequest(BaseModel):
     keywords: list[str] = Field(min_length=1, max_length=10)
-    category: str = Field(default="50000008", min_length=1, max_length=30)
+    category: str = Field(default="50000006", min_length=1, max_length=30)
     start_date: str
     end_date: str
     time_unit: str = "week"
