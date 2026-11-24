@@ -21,6 +21,8 @@
 ## Environment variables (Render dashboard only)
 - OPENAI_API_KEY: OpenAI API key
 - OPENAI_MODEL: gpt-4.1-mini
+- GEMINI_CHAT_API_KEY: Google AI Studio Gemini API key (server-side secret; may use the same Google key as image generation)
+- GEMINI_CHAT_MODEL: gemini-3.8-flash (optional; default)
 - CORS_ORIGINS: https://ahky900-art.github.io
 - NAVER_ADS_API_BASE: https://advertisement-naver-api-ymb4.onrender.com
 - NAVER_COMMERCE_CLIENT_ID: Commerce API application ID
