@@ -351,7 +351,10 @@ const savedApiBase=getNaverApiBase();const apiInput=document.getElementById('nav
  const messages=document.getElementById('guamegi-copilot-messages');
  const status=document.getElementById('guamegi-copilot-status');
  const apiBase=(()=>{try{return (localStorage.getItem('AGENT_API_BASE')||'https://guamegi-ai-sales-agent-api.onrender.com').replace(/\/$/,'')}catch(e){return 'https://guamegi-ai-sales-agent-api.onrender.com'}})();
- function open(){panel.classList.add('open');panel.setAttribute('aria-hidden','false');toggle.setAttribute('aria-expanded','true');toggle.setAttribute('aria-label','AI Copilot 닫기');input.focus()}
+
+ function stableId(key){try{let value=localStorage.getItem(key);if(!value){value=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('id-'+Date.now()+'-'+Math.random().toString(36).slice(2));localStorage.setItem(key,value)}return value}catch(e){return 'session-'+Date.now()}}
+ const clientId=stableId('GUAMEGI_AGENT_CLIENT_ID');
+ const conversationId=stableId('GUAMEGI_AGENT_CONVERSATION_ID'); function open(){panel.classList.add('open');panel.setAttribute('aria-hidden','false');toggle.setAttribute('aria-expanded','true');toggle.setAttribute('aria-label','AI Copilot 닫기');input.focus()}
  function hide(){panel.classList.remove('open');panel.setAttribute('aria-hidden','true');toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-label','AI Copilot 열기')}
  toggle.addEventListener('click',()=>panel.classList.contains('open')?hide():open());
  close.addEventListener('click',hide);
@@ -360,7 +363,7 @@ const savedApiBase=getNaverApiBase();const apiInput=document.getElementById('nav
    addMessage(message,'user');send.disabled=true;input.disabled=true;status.textContent='AI가 답변을 작성하고 있습니다...';
    const pending=addMessage('답변을 생성하고 있습니다…','bot');
    try{
-     const response=await fetch(apiBase+'/agent/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,provider:providerSelect.value})});
+     const response=await fetch(apiBase+'/agent/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,client_id:clientId,conversation_id:conversationId,provider:providerSelect.value})});
      let data={};try{data=await response.json()}catch(e){}
      if(!response.ok){const detail=data.detail;throw new Error(typeof detail==='string'?detail:detail?JSON.stringify(detail):'HTTP '+response.status)}
      pending.textContent=data.reply||data.response||'응답 내용이 비어 있습니다.';
