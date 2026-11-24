@@ -348,7 +348,7 @@ def search_domeggook_products(keyword: str, page: int = 1, size: int = 50):
             "shipping_fee": integer(delivery.get("fee")),
             "shipping_fee_additional": delivery.get("add"),
             "url": text_value(row.get("url")) or None,
-            "supply_active": market.get("supply", True)
+            "supply_active": (market.get("supply") if "supply" in market else True)
         })
 
     return {
@@ -498,6 +498,7 @@ class SourcingInput(BaseModel):
     competitor_observations: list[dict] = Field(default_factory=list)
     social_observations: list[dict] = Field(default_factory=list)
     seasonality_observations: list[dict] = Field(default_factory=list)
+    supplier_observations: list[dict] = Field(default_factory=list)
 
 class CSDraftInput(BaseModel):
     channel: str
@@ -610,6 +611,24 @@ def sourcing_analyze(req: SourcingInput):
                 "evidence_quality": "출처 확인 필요" if source == "출처 미기재" else "사용자 제공 관측"
             })
 
+    suppliers = []
+    for row in req.supplier_observations[:200]:
+        if not isinstance(row, dict):
+            continue
+        name = val(row, "name", "title", default="상품명 미기재")
+        if name == "상품명 미기재" and not row.get("item_no"):
+            continue
+        suppliers.append({
+            "item_no": val(row, "item_no", default=""),
+            "name": name,
+            "supply_price": num(row.get("price") or row.get("supply_price")),
+            "shipping_fee": num(row.get("shipping_fee")),
+            "min_order_qty": num(row.get("min_order_qty")),
+            "supplier": val(row, "supplier", "supplier_name", default="판매자 미제공"),
+            "url": val(row, "url", default=""),
+            "source": val(row, "source", default="도매매 Open API")
+        })
+
     seasonality = []
     for row in req.seasonality_observations[:100]:
         if isinstance(row, dict):
@@ -621,8 +640,8 @@ def sourcing_analyze(req: SourcingInput):
                     "source": val(row, "source", default="출처 미기재")
                 })
 
-    coverage = sum(bool(x) for x in (keywords, competitors, social, seasonality))
-    total = len(keywords) + len(competitors) + len(social) + len(seasonality)
+    coverage = sum(bool(x) for x in (keywords, competitors, suppliers, social, seasonality))
+    total = len(keywords) + len(competitors) + len(suppliers) + len(social) + len(seasonality)
     confidence = "낮음" if coverage <= 1 or total < 3 else ("보통" if coverage <= 3 else "자료 범위 내 참고")
     opportunities = []
     ranked = sorted([x for x in keywords if x["priority_score"] is not None], key=lambda x: x["priority_score"], reverse=True)
@@ -641,6 +660,15 @@ def sourcing_analyze(req: SourcingInput):
             "action": "순중량·손질 수준·구성품·배송비를 표준화한 뒤 가격 포지션 결정",
             "evidence": "사용자 입력 경쟁상품 관측",
             "risk": "리뷰 수는 판매량이나 시장점유율이 아닙니다."
+        })
+    if suppliers:
+        prices_supply = [x["supply_price"] for x in suppliers if x["supply_price"] is not None]
+        opportunities.append({
+            "area": "도매매 공급처 소싱",
+            "finding": f"공급상품 {len(suppliers)}건, 공급가 확인 {len(prices_supply)}건",
+            "action": "최소구매수량·배송비·공급가·상품 옵션을 확인하고 실제 판매 가능 원가를 산출",
+            "evidence": "도매매 Open API 공급상품 목록",
+            "risk": "공급가는 소매 경쟁사 판매가격이 아니며, 중량·손질·포장·배송 조건을 확인하기 전에는 소매가와 직접 비교할 수 없습니다."
         })
     if social:
         opportunities.append({
@@ -677,11 +705,13 @@ def sourcing_analyze(req: SourcingInput):
             "assessment": "기회 후보 도출" if opportunities else "관측 데이터 부족",
             "opportunities": opportunities, "confidence": confidence,
             "confidence_note": "관측 범위에 대한 정성 평가이며 통계적 신뢰구간이 아닙니다.",
-            "coverage": {"keywords": len(keywords), "competitors": len(competitors), "social": len(social), "seasonality": len(seasonality)}
+            "coverage": {"keywords": len(keywords), "competitors": len(competitors), "suppliers": len(suppliers), "social": len(social), "seasonality": len(seasonality)}
         },
         "keywords": keywords,
         "competitor_observations": competitors,
         "competitor_summary": competitor_summary,
+        "supplier_observations": suppliers,
+        "supplier_summary": {"observed_count": len(suppliers), "priced_count": sum(x["supply_price"] is not None for x in suppliers), "warning": "도매매 공급가는 소매 경쟁상품 판매가격과 별도 지표입니다."},
         "social_observations": social,
         "seasonality_observations": seasonality,
         "sales_strategy": strategy,
@@ -692,6 +722,7 @@ def sourcing_analyze(req: SourcingInput):
         "limitations": [
             "검색량과 추세 점수는 출처 및 측정 기간을 확인해야 합니다.",
             "경쟁상품 리뷰 수는 주문량·매출·시장점유율이 아닙니다.",
+            "도매매 공급가는 소매 경쟁상품 판매가격과 별도이며, 공급조건·중량·손질상태 확인 후 원가 분석에 사용해야 합니다.",
             "중량·손질 수준·구성품·배송비가 다른 상품 가격은 직접 비교할 수 없습니다.",
             "SNS 관측은 출처와 반응 지표가 확인되기 전까지 트렌드로 확정하지 않습니다.",
             "관측되지 않은 항목은 미확인으로 유지하며 매출·전환율을 임의 추정하지 않습니다."
