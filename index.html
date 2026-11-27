@@ -20,7 +20,7 @@
   aside{height:auto;min-height:0;overflow:visible}
   main{height:auto;min-height:0;overflow:visible}
 }
-</style></head><body><div class="shell">
+</style><style id="competitor-board-style">#competitorPostList button{font:inherit;color:inherit;background:#fff;border:1px solid var(--line);border-radius:11px;padding:15px 16px}#competitorPostList button:hover{border-color:#8db8f7;box-shadow:0 5px 16px #234a8014}#competitorPostList button h3{margin:5px 0 7px;font-size:14px}#competitorPostList button p{margin:0 0 10px;line-height:1.55;color:#71809a;font-size:11px}.competitor-back{margin-bottom:10px}</style></head><body><div class="shell">
 <aside>
 <div class="brand"><span class="brandmark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 24L11 16l5 4L28 7M20 7h8v8M5 28h22" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>과메기 AI<br>판매대행</span></div>
 <nav class="nav">
@@ -29,6 +29,7 @@
 <button data-page="ads"><span class="navicon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 2 5-7"/></svg></span><span>광고 분석</span></button>
 <button data-page="references"><span class="navicon"><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5z"/><path d="M14 3v5h5M8 12h8M8 16h8"/></svg></span><span>참조사항</span></button>
 <button data-page="automation"><span class="navicon"><svg viewBox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="m19 16 .8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg></span><span>콘텐츠 자동화</span></button>
+<button data-page="competitors"><span class="navicon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M15 15c3.3-.4 6 1.7 6 5"/></svg></span><span>인스타그램 경쟁사 분석</span></button>
 <button data-page="instagram"><span class="navicon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17.5 6.5h.01"/></svg></span><span>인스타그램</span></button>
 <button data-page="youtube"><span class="navicon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="m10 9 5 3-5 3z"/></svg></span><span>유튜브 영상 조사</span></button>
 <button data-page="calendar"><span class="navicon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 9h18"/></svg></span><span>게시 일정</span></button>
@@ -123,10 +124,10 @@
 <div class="notice" id="naverStatsNotice">네이버 검색광고 통계 API에서 일별 노출·클릭·전환 데이터를 불러옵니다.</div>
 </div>
 </section>
-<section class="page" id="automation">
-<div class="page-title"><div><h1>콘텐츠 추천 게시판</h1><div class="sub">Instagram 계정 분석을 바탕으로 콘텐츠 아이디어·제작 우선순위·실행 결과를 게시글 단위로 관리합니다.</div></div><span class="pill">기획 게시판 · 2건</span></div>
+<section class="page" id="automation"><div class="page-title"><div><h1>콘텐츠 자동화</h1><div class="sub">경쟁사 분석에서 도출한 인사이트를 실제 홍보 콘텐츠로 전환하는 작업 공간입니다.</div></div></div><div class="card"><div class="card-head"><h2>콘텐츠 제작 흐름</h2><span class="pill">분석 → 기획 → 제작 → 게시 → 성과 확인</span></div><div class="content-grid"><div class="content-tile"><span class="pill">STEP 1</span><h3>주제 선정</h3><p>경쟁사 분석에서 검증할 콘텐츠 패턴과 차별화 주제를 가져옵니다.</p></div><div class="content-tile"><span class="pill">STEP 2</span><h3>원고·영상 기획</h3><p>릴스 대본, 화면 구성, 자막, 캡션 및 해시태그를 작성합니다.</p></div><div class="content-tile"><span class="pill">STEP 3</span><h3>게시·성과 관리</h3><p>게시 일정과 실제 게시 후 성과를 기록해 다음 콘텐츠에 반영합니다.</p></div></div><div class="filters" style="margin-top:14px"><button class="chip" onclick="go('competitors')">경쟁사 분석 게시판 보기</button><button class="chip" onclick="go('calendar')">게시 일정 보기</button></div></div></section>
+<section class="page" id="competitors"><div class="page-title"><div><h1>인스타그램 경쟁사 분석</h1><div class="sub">경쟁 계정과 콘텐츠 전략을 게시글 단위로 축적하고, 클릭해서 상세 분석을 확인합니다.</div></div><span class="pill">분석 게시글 · 2건</span></div>
 
-<div class="card" style="margin-bottom:12px">
+<div class="card competitor-detail" id="competitorPost1" style="display:none;margin-bottom:12px">
  <div class="card-head"><div><span class="pill">경쟁사 분석 게시글 · 2026.11.27</span><h2 style="margin:9px 0 3px;font-size:18px">[Instagram] 과메기 경쟁 계정 6곳 분석 및 콘텐츠 차별화 전략</h2><div class="sub">분류: 경쟁사 벤치마킹 / 콘텐츠 전략 · 우선순위: 최상 · 상태: 실행 권장</div></div><span class="status">신규 등록</span></div>
  <p style="line-height:1.75;color:#52627d;margin:10px 0">경쟁 계정 6곳의 팔로워·게시물 규모, 계정 포지션, 콘텐츠 반응을 비교했습니다. 핵심 결론은 대형 계정의 규모를 따라가기보다 <b>가격·구성의 투명성, 사람 중심의 신뢰, 구룡포 건조 현장 기록</b>으로 초기 고객의 구매 불안을 줄이는 것입니다.</p>
  <div class="notice"><b>분석 기준</b> · 아래 수치는 사용자가 직접 확인해 제공한 관측값이며 실시간 API 검증값이 아닙니다. 시점에 따라 달라질 수 있고, 일부 게시물의 좋아요·댓글을 계정 전체 평균으로 일반화하지 않습니다.</div>
@@ -169,7 +170,7 @@
  <div class="filters" style="margin-top:14px"><a class="chip" href="https://www.instagram.com/semidriedsaury/" target="_blank" rel="noopener noreferrer">우리 계정 열기 ↗</a><a class="chip" href="https://www.instagram.com/miso_gwamegi/" target="_blank" rel="noopener noreferrer">미소과메기 벤치마크 ↗</a><a class="chip" href="https://www.instagram.com/pgwamegi/" target="_blank" rel="noopener noreferrer">샘물수산 벤치마크 ↗</a></div>
 </div>
 
-<div class="card" style="margin-bottom:12px">
+<div class="card competitor-detail" id="competitorPost2" style="display:none;margin-bottom:12px">
  <div class="card-head"><div><span class="pill">추천 게시글 · 2026.11.27</span><h2 style="margin:9px 0 3px;font-size:18px">[Instagram] @semidriedsaury 콘텐츠 운영 개선 및 추천안</h2><div class="sub">분류: 계정 분석 / 콘텐츠 전략 · 우선순위: 높음 · 상태: 검토 대기</div></div><span class="status">신규 등록</span></div>
  <p style="line-height:1.75;color:#52627d;margin:10px 0">구룡포 과메기 계정의 핵심 경쟁력은 산지 현장성과 실제 먹는 경험입니다. 기존 게시물에서 확인되는 반응을 바탕으로, 반복적인 제품 홍보보다 <b>현장 신뢰·먹는 방법·조합 실험·세계 식문화</b>를 중심으로 콘텐츠를 다양화하는 방향을 제안합니다.</p>
  <div class="notice"><b>분석 기준</b> · 사용자가 확인한 게시물 반응(좋아요·댓글)과 대시보드 Instagram 스냅샷(2026.11.24)을 함께 참고했습니다. 스냅샷에는 저장·공유가 대부분 0으로 기록되어 있으나, 이는 실제 구매 전환이나 전체 반응을 의미하지 않습니다. 조회수·도달·시청 지표와 좋아요·댓글은 측정 기준을 구분해 해석해야 합니다.</div>
@@ -204,14 +205,9 @@
  <div class="notice"><b>검증 포인트</b> · 위 제안은 계정의 초기 반응을 바탕으로 한 콘텐츠 가설입니다. 표본이 작고 좋아요·댓글·저장·공유 데이터의 수집 범위가 서로 다르므로, 2주간 테스트 후 실제 성과로 우선순위를 재조정하는 것이 합리적입니다.</div>
  <div class="filters" style="margin-top:14px"><a class="chip" href="https://www.instagram.com/semidriedsaury/" target="_blank" rel="noopener noreferrer">계정 열기 ↗</a><a class="chip" href="https://ahky900-art.github.io/advertisement/" target="_blank" rel="noopener noreferrer">대시보드 열기 ↗</a></div>
 </div>
-<div class="card">
- <div class="card-head"><h2>게시글 목록</h2><span class="pill">전체 2건</span></div>
- <div class="schedule">
-  <div class="schedule-row"><time>11.27</time><span><b>[Instagram] 과메기 경쟁 계정 6곳 분석 및 콘텐츠 차별화 전략</b><small style="display:block;color:#77869d;margin-top:3px">경쟁사 벤치마킹 · 가격 공개 · 건조 리포트 · 우선순위 최상</small></span><span class="status">실행 권장</span></div>
-  <div class="schedule-row"><time>11.27</time><span><b>[Instagram] @semidriedsaury 콘텐츠 운영 개선 및 추천안</b><small style="display:block;color:#77869d;margin-top:3px">계정 분석 · 콘텐츠 전략 · 우선순위 높음</small></span><span class="status">검토 대기</span></div>
- </div>
-</div>
-</section>
+<div class="card" id="competitorPostList"><div class="card-head"><div><h2>분석 게시글</h2><div class="sub">목록에서 제목을 클릭하면 상세 분석이 열립니다.</div></div><span class="pill">전체 2건</span></div>
+<button class="content-tile" style="display:block;width:100%;text-align:left;cursor:pointer;margin-bottom:9px" onclick="openCompetitorPost(1)"><div class="card-head"><span class="pill">2026.11.27 · 경쟁사 벤치마킹</span><span class="status">실행 권장</span></div><h3>[Instagram] 과메기 경쟁 계정 6곳 분석 및 콘텐츠 차별화 전략</h3><p>경쟁사 6개 계정의 포지셔닝, 반응 콘텐츠 5가지, 가격 공개 전략 및 데일리 건조 리포트 제안</p><span class="muted" style="font-size:11px">상세 분석 보기 →</span></button>
+<button class="content-tile" style="display:block;width:100%;text-align:left;cursor:pointer" onclick="openCompetitorPost(2)"><div class="card-head"><span class="pill">2026.11.27 · 계정 운영 전략</span><span class="status">검토 대기</span></div><h3>[Instagram] @semidriedsaury 콘텐츠 운영 개선 및 추천안</h3><p>우리 계정의 기존 게시물 강점, 개선점, 콘텐츠 시리즈와 주간 실행 우선순위</p><span class="muted" style="font-size:11px">상세 분석 보기 →</span></button></div></section>
 <section class="page" id="instagram"><div class="page-title"><div><h1>인스타그램</h1><div class="sub">Instagram 유기적 콘텐츠 데이터 · 최근 30일 스냅샷 (2026.11.24 조회)</div></div><span class="status">데이터 파일 탑재</span></div><div class="ig-kpis" id="igKpis"></div><div class="notice">Instagram 콘텐츠 실적이며 스마트스토어 주문·매출 전환 데이터는 아닙니다. 좋아요·댓글은 조회 결과에서 제공되지 않아 제외합니다.</div><div class="card"><div class="card-head"><h2>게시물별 성과</h2><select class="select" id="igFilter" onchange="renderInstagram()"><option value="ALL">전체 콘텐츠</option><option value="REELS">릴스</option><option value="STATIC">이미지·캐러셀</option></select></div><div class="ig-table-wrap"><table class="table"><thead><tr><th>게시일</th><th>유형</th><th>콘텐츠</th><th>조회수</th><th>도달</th><th>평균 시청</th><th>건너뛰기율</th><th>저장</th><th>공유</th><th>원문</th></tr></thead><tbody id="igRows"></tbody></table></div></div><div class="card" style="margin-top:10px"><div class="card-head"><h2>릴스 시청 품질</h2></div><div id="igReelSummary" class="sub"></div></div></section>
 <section class="page" id="youtube"><div class="page-title"><div><h1>유튜브 영상 조사</h1><div class="sub">일반 영상과 쇼츠를 키워드로 검색하고 공개 조회수 및 추이를 확인합니다.</div></div><span class="pill">영상 링크 등록</span></div><div class="card"><div class="card-head"><h2>등록 영상 조회수</h2><button class="chip" onclick="loadYouTubeShorts()">영상 정보 새로고침 ↻</button></div><div class="two-col" style="align-items:center"><div><a id="ytVideoLink" href="https://youtube.com/shorts/IHvEovPcb7g" target="_blank" rel="noopener"><img id="ytThumbnail" src="https://i.ytimg.com/vi/IHvEovPcb7g/hqdefault.jpg" alt="등록한 과메기 쇼츠 썸네일" style="width:100%;max-width:420px;aspect-ratio:16/9;object-fit:cover;border-radius:12px"></a></div><div><h3 id="ytVideoTitle">과메기 쇼츠 영상</h3><p class="sub" id="ytVideoChannel">등록된 영상</p><div class="kpi-value" id="ytViewCount">조회수 확인 중</div><p class="sub" id="ytVideoUpdated">YouTube 공개 통계 조회 중</p><p><a id="ytOpenLink" href="https://youtube.com/shorts/IHvEovPcb7g" target="_blank" rel="noopener">YouTube에서 영상 보기 ↗</a></p></div></div><div class="notice" id="ytDataNotice">썸네일은 영상 ID로 표시합니다. 조회수·제목은 YouTube Data API 연결 상태에 따라 자동 갱신됩니다.</div></div>
 <div class="card" style="margin-top:12px">
@@ -249,6 +245,7 @@
 const pageNames={home:'통합 대시보드',products:'상품 분석',references:'참조사항',ads:'광고 분석',automation:'콘텐츠 자동화',instagram:'인스타그램',youtube:'유튜브 영상 조사',calendar:'게시 일정',reports:'성과 리포트',settings:'API 설정',contentStudio:'AI 콘텐츠 제작실'};
 function copyContentPrompt(id){const el=document.getElementById(id);if(!el)return;navigator.clipboard.writeText(el.value).then(()=>alert('프롬프트를 복사했습니다.')).catch(()=>{el.select();document.execCommand('copy');alert('프롬프트를 복사했습니다.');});}
 function previewContentFiles(event){const files=Array.from(event.target.files||[]);const grid=document.getElementById('contentPreviewGrid');if(!grid)return;if(!files.length){grid.innerHTML='<div class="content-tile"><p>아직 등록된 콘텐츠가 없습니다.</p></div>';return;}grid.innerHTML=files.map(file=>{const url=URL.createObjectURL(file);const name=String(file.name).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const media=file.type.startsWith('video/')?'<video controls style="width:100%;border-radius:8px;max-height:220px" src="'+url+'"></video>':'<img alt="'+name+'" src="'+url+'" style="width:100%;aspect-ratio:1/1;object-fit:contain;background:#f4f7fc;border-radius:8px">';return '<div class="content-tile">'+media+'<h3>'+name+'</h3><p>'+((file.size/1024/1024).toFixed(2))+' MB · 브라우저 임시 미리보기</p></div>';}).join('');}
+function openCompetitorPost(n){const list=document.getElementById('competitorPostList');if(list)list.style.display='none';document.querySelectorAll('.competitor-detail').forEach(el=>el.style.display='none');const target=document.getElementById('competitorPost'+n);if(target){if(!target.querySelector('.competitor-back')){const b=document.createElement('button');b.className='chip competitor-back';b.type='button';b.textContent='← 게시글 목록으로';b.onclick=closeCompetitorPost;target.insertBefore(b,target.firstChild);}target.style.display='block';}document.querySelector('main').scrollTop=0;}function closeCompetitorPost(){document.querySelectorAll('.competitor-detail').forEach(el=>el.style.display='none');document.getElementById('competitorPostList').style.display='block';document.querySelector('main').scrollTop=0;}
 function go(id){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===id));if(id==='home'||id==='instagram')requestAnimationFrame(()=>{drawInstagramTrend();});}
 document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.page)));
 function selectPlatform(p){document.getElementById('coupang').classList.toggle('selected',p==='coupang');document.getElementById('naver').classList.toggle('selected',p==='naver');}
